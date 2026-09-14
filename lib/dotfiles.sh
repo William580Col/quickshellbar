@@ -251,7 +251,7 @@ instalar_oh_my_bash() {
 #   fichero de configuración de SDDM y ajusta permisos (owner: $USER) para que
 #   los scripts sync-* puedan escribir el fondo sin sudo.
 instalar_tema_sddm() {
-  local src="$PROJECT_DIR/sddm theme/pixel"
+  local src="$PROJECT_DIR/sddm-theme/pixel"
   local themes_dir="/usr/share/sddm/themes"
   local dst="$themes_dir/pixel"
   local conf="/etc/sddm.conf.d/99-pixel-theme.conf"

@@ -83,7 +83,7 @@ Copia las configuraciones a `~/.config/` (respaldando lo existente con sufijo
 - **Compartidos:** `alacritty/`, `kitty/`, `fuzzel/`, `matugen/`
 - **Shell:** `shell/bashrc` → `~/.bashrc` y `shell/zshrc` → `~/.zshrc` (+ oh-my-bash y ble.sh)
 - **Wallpapers:** `Wallpapers/` → `~/Pictures/Wallpapers/`
-- **Tema SDDM:** `sddm theme/pixel/` → `/usr/share/sddm/themes/pixel/` + config `[Theme] Current=pixel`
+- **Tema SDDM:** `sddm-theme/pixel/` → `/usr/share/sddm/themes/pixel/` + config `[Theme] Current=pixel`
 - **Scripts:** `.local/bin/` → `~/.local/bin/` (sin modificar)
 - **Hyprland:** `hypr/` → `~/.config/hypr/`
 - **Sway:** `sway/` → `~/.config/sway/` + `environment.d/quickshell-sway.conf`
