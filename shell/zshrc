@@ -1,0 +1,64 @@
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.npm-global/bin:$PATH"
+#            _
+#    _______| |__  _ __ ___
+#   |_  / __| '_ \| '__/ __|
+#  _ / /\__ \ | | | | | (__
+# (_)___|___/_| |_|_|  \___|
+#
+# -----------------------------------------------------
+# ML4W zshrc loader
+# -----------------------------------------------------
+
+# DON'T CHANGE THIS FILE
+
+# You can define your custom configuration by adding
+# files in ~/.config/zshrc
+# or by creating a folder ~/.config/zshrc/custom
+# with copies of files from ~/.config/zshrc
+# You can also create a .zshrc_custom file in your home directory
+# -----------------------------------------------------
+
+# -----------------------------------------------------
+# Load modular configuration
+# -----------------------------------------------------
+
+for f in ~/.config/zshrc/*; do
+    if [ ! -d $f ]; then
+        c=`echo $f | sed -e "s=.config/zshrc=.config/zshrc/custom="`
+        [[ -f $c ]] && source $c || source $f
+    fi
+done
+
+# -----------------------------------------------------
+# Load single customization file (if exists)
+# -----------------------------------------------------
+
+if [ -f ~/.zshrc_custom ]; then
+    source ~/.zshrc_custom
+fi
+
+
+
+# iNiR environment
+export INIR_VENV="$HOME/.local/state/quickshell/.venv"
+export ILLOGICAL_IMPULSE_VIRTUAL_ENV="$INIR_VENV"
+# Apply terminal color sequences (Material You from wallpaper)
+if [ -f ~/.local/state/quickshell/user/generated/terminal/sequences.txt ]; then
+  cat ~/.local/state/quickshell/user/generated/terminal/sequences.txt
+fi
+# Starship prompt (fish is wired via config.fish; zsh needs its own init)
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi
+# end iNiR
+
+
+
+# iNiR launcher PATH
+case ":$PATH:" in
+  *:"$HOME/.local/bin":*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+# end iNiR launcher PATH
+

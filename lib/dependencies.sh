@@ -80,6 +80,11 @@ pkgs_optional() {
   fi
 }
 
+# --- SDDM (gestor de sesiones) ------------------------------------------------
+pkgs_sddm() {
+  echo "sddm"
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Instaladores primitivos
 # ─────────────────────────────────────────────────────────────────────────────
@@ -104,6 +109,36 @@ instalar_aur() {
   fi
   step "AUR ($helper): ${pkgs[*]}"
   "$helper" -S --needed --noconfirm "${pkgs[@]}"
+}
+
+# instalar_yay_si_falta — instala yay desde AUR si no hay ningún helper
+instalar_yay_si_falta() {
+  local d; d="$(detect_distro)"
+  [[ "$d" == "arch" ]] || return 0   # solo aplica a Arch
+  local helper; helper="$(aur_helper)"
+  [[ "$helper" != "none" ]] && { info "Helper AUR ya disponible: $helper"; return 0; }
+
+  title "Instalando yay (helper AUR)"
+  step "No se encontró paru ni yay. Instalando yay desde AUR..."
+  if ! have git; then
+    sudo pacman -S --needed --noconfirm git
+  fi
+  sudo pacman -S --needed --noconfirm base-devel
+
+  local tmp; tmp="$(mktemp -d)"
+  (
+    cd "$tmp" || exit 1
+    git clone https://aur.archlinux.org/yay.git
+    cd yay || exit 1
+    makepkg -si --noconfirm
+  )
+  rm -rf "$tmp"
+
+  if have yay; then
+    ok "yay instalado correctamente."
+  else
+    err "No se pudo instalar yay. Deberás instalarlo manualmente."
+  fi
 }
 
 # instalar_apt <pkgs...>
@@ -237,6 +272,9 @@ instalar_dependencias() {
   step "Distro detectada: $(distro_name)"
   step "Gestor: $manager | Helper AUR: $helper"
 
+  # 0. Helper AUR: instalar yay si no hay ninguno (solo Arch)
+  instalar_yay_si_falta
+
   # 1. Compositores (uno por cada seleccionado)
   local comp
   for comp in "${compositores[@]}"; do
@@ -284,7 +322,14 @@ instalar_dependencias() {
     debian) instalar_awww_debian ;;
   esac
 
-  # 10. Complementarios opcionales
+  # 10. SDDM (gestor de sesiones) si no está instalado
+  if have sddm; then
+    info "SDDM ya está instalado."
+  else
+    instalar_grupo "SDDM (gestor de sesiones)" pkgs_sddm
+  fi
+
+  # 11. Complementarios opcionales
   if confirm "¿Instalar también los complementarios (fuzzel, alacritty, thunar, playerctl, nm-applet)? [s/N] "; then
     instalar_grupo "Complementarios" pkgs_optional
   else

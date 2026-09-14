@@ -65,6 +65,8 @@ Instala, según la distro detectada:
 | Rust/cargo | `rust` | `cargo` |
 | matugen | `matugen-bin` (AUR) | `cargo install matugen` |
 | awww | AUR | `cargo install --git … awww` |
+| yay (helper AUR) | auto-instala si falta | — |
+| SDDM | auto-instala si falta | auto-instala si falta |
 | Complementarios | fuzzel, alacritty, thunar, playerctl, nm-applet | fuzzel, alacritty, thunar, playerctl, nm-gnome |
 
 Los paquetes que no están en repos oficiales se resuelven con el helper AUR
@@ -77,6 +79,8 @@ Copia las configuraciones a `~/.config/` (respaldando lo existente con sufijo
 `.bak-<timestamp>` antes de sobrescribir):
 
 - **Compartidos:** `alacritty/`, `kitty/`, `fuzzel/`, `matugen/`
+- **Shell:** `shell/bashrc` → `~/.bashrc` y `shell/zshrc` → `~/.zshrc`
+- **Wallpapers:** `Wallpapers/` → `~/Pictures/Wallpapers/`
 - **Hyprland:** `hypr/` → `~/.config/hypr/`
 - **Sway:** `sway/` → `~/.config/sway/` + `environment.d/quickshell-sway.conf`
 - **Niri:** `niri/` → `~/.config/niri/` (config modular en `config.d/`)
@@ -103,12 +107,24 @@ proyecto/
 ├── lib/
 │   ├── common.sh              # detección distro/AUR, logging, respaldo
 │   ├── dependencies.sh        # definición e instalación de paquetes
-│   └── dotfiles.sh            # copia de dotfiles y zips Quickshell
+│   └── dotfiles.sh            # copia de dotfiles, wallpapers y zips Quickshell
 ├── DEPENDENCIAS.md            # referencia detallada de dependencias
+├── shell/
+│   ├── bashrc                 # tu configuración de Bash
+│   └── zshrc                  # tu configuración de Zsh
+├── Wallpapers/                # se copian a ~/Pictures/Wallpapers
 ├── alacritty/  kitty/  fuzzel/  matugen/
 ├── hypr/  sway/  niri/  umbriel/
 └── quickshell-*.zip           # 3 variantes del shell (hyprland/sway/umbriel)
 ```
+
+> **Nota shell:** `shell/bashrc` y `shell/zshrc` son tus configuraciones actuales
+> con las rutas hardcodeadas (`/home/william/...`) reemplazadas por `$HOME` para
+> que sean portables. Al instalarse, respaldan el `~/.bashrc`/`~/.zshrc`
+> existente.
+>
+> **Nota wallpapers:** se copian a `~/Pictures/Wallpapers/` y **no** se eliminan
+> al ejecutar `--restaurar` (son archivos del usuario, no config del script).
 
 ## Prueba sin tocar tu sistema
 
@@ -123,8 +139,8 @@ XDG_CONFIG_HOME="$(mktemp -d)" ./install.sh --compositor sway --dotfiles
 
 - Nada se sobrescribe sin respaldo: los archivos existentes se mueven a
   `*.bak-<timestamp>`.
-- `--restaurar` revierte a la copia de respaldo más reciente; si no hay
-  respaldo, elimina lo que este script instaló (asumiendo que era suyo).
-- Las instalaciones con `sudo` (pacman/apt) y AUR son interactivas por diseño;
-  revisa siempre el resumen antes de confirmar.
-- Para restaurar manualmente: `mv ~/.config/<dir>.bak-<timestamp> ~/.config/<dir>`.
+- `--restaurar` revierte a la copia de respaldo más reciente (incluye
+  `~/.bashrc` y `~/.zshrc`); los wallpapers no se tocan.
+- El helper AUR (`yay`) se instala automáticamente solo si no hay ni `paru` ni
+  `yay` en el sistema (Arch).
+- SDDM se instala solo si no está presente.

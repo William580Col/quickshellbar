@@ -125,8 +125,7 @@ instalar_quickshell() {
 # ─────────────────────────────────────────────────────────────────────────────
 # Rutas gestionadas por compositor y compartidas
 #   (se usan tanto para respaldar como para restaurar/desinstalar)
-# ─────────────────────────────────────────────────────────────────────────────
-# paths_compositor <hypr|sway|niri|umbriel>  — imprime una ruta por línea
+# ─────────────────────────────────────────────────────────────────────────────# paths_compositor <hypr|sway|niri|umbriel>  — imprime una ruta por línea
 paths_compositor() {
   local comp="$1"
   case "$comp" in
@@ -145,7 +144,6 @@ paths_compartidos() {
   echo "$CONFIG_HOME/fuzzel"
   echo "$CONFIG_HOME/matugen"
 }
-
 # respaldar_compositor <comp> — respalda solo las rutas del compositor
 respaldar_compositor() {
   local comp="$1" p
@@ -156,6 +154,51 @@ respaldar_compositor() {
 respaldar_compartidos() {
   local p
   while read -r p; do backup_target "$p"; done < <(paths_compartidos)
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Wallpapers
+# ─────────────────────────────────────────────────────────────────────────────
+# copiar_wallpapers — copia ./Wallpapers -> ~/Pictures/Wallpapers
+copiar_wallpapers() {
+  local src="$PROJECT_DIR/Wallpapers"
+  local dst="$HOME/Pictures/Wallpapers"
+
+  [[ -d "$src" ]] || { warn "No existe $src (no hay wallpapers que copiar)."; return 0; }
+  if [[ -z "$(ls -A "$src" 2>/dev/null)" ]]; then
+    info "$src está vacía; omitiendo wallpapers."
+    return 0
+  fi
+
+  title "Wallpapers"
+  mkdir -p "$dst"
+  cp -a "$src"/. "$dst"/
+  ok "Wallpapers copiados a $dst"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Shell config (bashrc / zshrc)
+# ─────────────────────────────────────────────────────────────────────────────
+# copiar_shell_config — copia shell/bashrc y shell/zshrc a ~/.
+#   No sobrescribe a ciegas: respalda el existente y avisa.
+copiar_shell_config() {
+  title "Shell config (bashrc / zshrc)"
+
+  if [[ -f "$PROJECT_DIR/shell/bashrc" ]]; then
+    backup_target "$HOME/.bashrc"
+    cp -a "$PROJECT_DIR/shell/bashrc" "$HOME/.bashrc"
+    ok "Instalado ~/.bashrc"
+  else
+    warn "No existe shell/bashrc en el proyecto."
+  fi
+
+  if [[ -f "$PROJECT_DIR/shell/zshrc" ]]; then
+    backup_target "$HOME/.zshrc"
+    cp -a "$PROJECT_DIR/shell/zshrc" "$HOME/.zshrc"
+    ok "Instalado ~/.zshrc"
+  else
+    warn "No existe shell/zshrc en el proyecto."
+  fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -176,6 +219,10 @@ instalar_dotfiles() {
 
   # Instalar compartidos una sola vez
   instalar_dotfiles_compartidos
+
+  # Wallpapers y shell config (bashrc/zshrc)
+  copiar_wallpapers
+  copiar_shell_config
 
   # Instalar cada compositor
   for comp in "${compositores[@]}"; do
@@ -222,10 +269,15 @@ restaurar_dotfiles() {
   local p comp
   # Compartidos
   while read -r p; do restaurar_target "$p"; done < <(paths_compartidos)
+  # Shell config
+  restaurar_target "$HOME/.bashrc"
+  restaurar_target "$HOME/.zshrc"
   # Por compositor
   for comp in "${compositores[@]}"; do
     while read -r p; do restaurar_target "$p"; done < <(paths_compositor "$comp")
   done
+
+  info "Los wallpapers en ~/Pictures/Wallpapers no se eliminan (son archivos del usuario)."
 
   ok "Dotfiles desinstalados/restaurados para: ${compositores[*]}"
 }
