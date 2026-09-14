@@ -65,8 +65,10 @@ Instala, según la distro detectada:
 | Rust/cargo | `rust` | `cargo` |
 | matugen | `matugen-bin` (AUR) | `cargo install matugen` |
 | awww | AUR | `cargo install --git … awww` |
+| xwayland-satellite | pacman (extra) — solo Umbriel | manual (cargo/binarios GitHub) — solo Umbriel |
 | yay (helper AUR) | auto-instala si falta | — |
 | SDDM | auto-instala si falta | auto-instala si falta |
+| oh-my-bash + ble.sh | clona a `~/.oh-my-bash` y `~/.local/share/blesh` | ídem |
 | Complementarios | fuzzel, alacritty, thunar, playerctl, nm-applet | fuzzel, alacritty, thunar, playerctl, nm-gnome |
 
 Los paquetes que no están en repos oficiales se resuelven con el helper AUR
@@ -79,8 +81,10 @@ Copia las configuraciones a `~/.config/` (respaldando lo existente con sufijo
 `.bak-<timestamp>` antes de sobrescribir):
 
 - **Compartidos:** `alacritty/`, `kitty/`, `fuzzel/`, `matugen/`
-- **Shell:** `shell/bashrc` → `~/.bashrc` y `shell/zshrc` → `~/.zshrc`
+- **Shell:** `shell/bashrc` → `~/.bashrc` y `shell/zshrc` → `~/.zshrc` (+ oh-my-bash y ble.sh)
 - **Wallpapers:** `Wallpapers/` → `~/Pictures/Wallpapers/`
+- **Tema SDDM:** `sddm theme/pixel/` → `/usr/share/sddm/themes/pixel/` + config `[Theme] Current=pixel`
+- **Scripts:** `.local/bin/` → `~/.local/bin/` (sin modificar)
 - **Hyprland:** `hypr/` → `~/.config/hypr/`
 - **Sway:** `sway/` → `~/.config/sway/` + `environment.d/quickshell-sway.conf`
 - **Niri:** `niri/` → `~/.config/niri/` (config modular en `config.d/`)
@@ -121,10 +125,17 @@ proyecto/
 > **Nota shell:** `shell/bashrc` y `shell/zshrc` son tus configuraciones actuales
 > con las rutas hardcodeadas (`/home/william/...`) reemplazadas por `$HOME` para
 > que sean portables. Al instalarse, respaldan el `~/.bashrc`/`~/.zshrc`
-> existente.
+> existente. Además se instalan **oh-my-bash** (`~/.oh-my-bash`) y **ble.sh**
+> (`~/.local/share/blesh`), que el `bashrc` ya carga.
 >
 > **Nota wallpapers:** se copian a `~/Pictures/Wallpapers/` y **no** se eliminan
 > al ejecutar `--restaurar` (son archivos del usuario, no config del script).
+>
+> **Nota tema SDDM:** el tema se instala en `/usr/share/sddm/themes/pixel` (con
+> `sudo`), se cambia el owner a `$USER` (para que los scripts `sync-*` escriban
+> el fondo sin sudo) y se genera `/etc/sddm.conf.d/99-pixel-theme.conf` con
+> `Current=pixel`. Los scripts `sync-pixel-sddm.py` y `sync-sway-sddm.sh` se
+> copian a `~/.local/bin` **sin modificar** (son correctos tal cual).
 
 ## Prueba sin tocar tu sistema
 
@@ -140,7 +151,8 @@ XDG_CONFIG_HOME="$(mktemp -d)" ./install.sh --compositor sway --dotfiles
 - Nada se sobrescribe sin respaldo: los archivos existentes se mueven a
   `*.bak-<timestamp>`.
 - `--restaurar` revierte a la copia de respaldo más reciente (incluye
-  `~/.bashrc` y `~/.zshrc`); los wallpapers no se tocan.
+  `~/.bashrc` y `~/.zshrc`); los wallpapers, el tema SDDM, los scripts de
+  `~/.local/bin` y los frameworks de shell no se tocan.
 - El helper AUR (`yay`) se instala automáticamente solo si no hay ni `paru` ni
   `yay` en el sistema (Arch).
 - SDDM se instala solo si no está presente.

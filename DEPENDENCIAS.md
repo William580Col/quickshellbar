@@ -197,6 +197,21 @@ proyecto.
 
 ---
 
+## 11b. Solo si usas Umbriel
+
+**Arch (AUR):**
+```bash
+paru -S umbriel-git
+# XWayland requiere xwayland-satellite (está en repos extra):
+sudo pacman -S xwayland-satellite
+```
+
+**Debian:** Umbriel no está en los repos oficiales (usa el repositorio apt de
+NickH; ver `docs.noctalia.dev/umbriel/installation/`). `xwayland-satellite`
+tampoco está empaquetado: se compila con cargo o se usan los binarios de GitHub.
+
+---
+
 ## 12. Complementarios que usan los atajos de teclado portados (opcional)
 
 Estos no los usa el shell directamente, pero sí los binds que armamos en

@@ -40,6 +40,12 @@ fi
 
 source -- ~/.local/share/blesh/ble.sh
 
+# Oh My Bash (instalado por el instalador si está disponible)
+export OSH="$HOME/.oh-my-bash"
+if [ -f "$OSH/oh-my-bash.sh" ]; then
+    source "$OSH/oh-my-bash.sh"
+fi
+
 
 
 

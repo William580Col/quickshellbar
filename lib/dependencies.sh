@@ -28,8 +28,8 @@ pkgs_compositor() {
       else echo "__MANUAL__ niri (ver README: revisa apt search niri o releases de GitHub)"; fi
       ;;
     umbriel)
-      if [[ "$d" == "arch" ]]; then echo "__AUR__ umbriel-git"
-      else echo "__MANUAL__ umbriel (repositorio apt de NickH, ver docs.noctalia.dev)"; fi
+      if [[ "$d" == "arch" ]]; then echo "xwayland-satellite __AUR__ umbriel-git"
+      else echo "__MANUAL__ umbriel + xwayland-satellite (ver docs.noctalia.dev; xwayland-satellite vía cargo o binarios GitHub)"; fi
       ;;
   esac
 }

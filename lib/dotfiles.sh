@@ -202,6 +202,123 @@ copiar_shell_config() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Frameworks de shell: ble.sh (bash line editor) y oh-my-bash
+# ─────────────────────────────────────────────────────────────────────────────
+# instalar_ble_sh — clona y compila ble.sh en ~/.local/share/blesh
+instalar_ble_sh() {
+  local dst="$HOME/.local/share/blesh"
+  if [[ -f "$dst/ble.sh" ]]; then
+    info "ble.sh ya está instalado."
+    return 0
+  fi
+  if ! have git; then
+    warn "git no disponible; omitiendo ble.sh."
+    return 0
+  fi
+
+  title "ble.sh (bash line editor)"
+  step "Clonando y compilando ble.sh..."
+  local tmp; tmp="$(mktemp -d)"
+  git clone --recursive --depth 1 https://github.com/akinomyoga/ble.sh.git "$tmp/ble.sh"
+  make -C "$tmp/ble.sh" >/dev/null
+  make -C "$tmp/ble.sh" install PREFIX="$HOME/.local" >/dev/null
+  rm -rf "$tmp"
+  ok "ble.sh instalado en $dst"
+}
+
+# instalar_oh_my_bash — clona oh-my-bash en ~/.oh-my-bash
+instalar_oh_my_bash() {
+  local dst="$HOME/.oh-my-bash"
+  if [[ -d "$dst" ]]; then
+    info "oh-my-bash ya está instalado."
+    return 0
+  fi
+  if ! have git; then
+    warn "git no disponible; omitiendo oh-my-bash."
+    return 0
+  fi
+
+  title "Oh My Bash"
+  step "Clonando oh-my-bash..."
+  git clone --depth 1 https://github.com/ohmybash/oh-my-bash.git "$dst"
+  ok "oh-my-bash instalado en $dst"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tema SDDM (pixel)
+# ─────────────────────────────────────────────────────────────────────────────
+# instalar_tema_sddm — copia el tema a /usr/share/sddm/themes/pixel, genera el
+#   fichero de configuración de SDDM y ajusta permisos (owner: $USER) para que
+#   los scripts sync-* puedan escribir el fondo sin sudo.
+instalar_tema_sddm() {
+  local src="$PROJECT_DIR/sddm theme/pixel"
+  local themes_dir="/usr/share/sddm/themes"
+  local dst="$themes_dir/pixel"
+  local conf="/etc/sddm.conf.d/99-pixel-theme.conf"
+
+  [[ -d "$src" ]] || { warn "No existe el tema SDDM en $src"; return 0; }
+  if ! have sddm; then
+    info "SDDM no está instalado; omitiendo tema (instálalo con --deps o --ambos)."
+    return 0
+  fi
+
+  title "Tema SDDM (pixel)"
+
+  # Respaldar tema previo si existe
+  if [[ -d "$dst" ]]; then
+    local stamp backup
+    stamp="$(date +%Y%m%d-%H%M%S)"
+    backup="$dst.bak-$stamp"
+    sudo mv "$dst" "$backup"
+    warn "Respaldo: $dst -> $backup"
+  fi
+
+  step "Copiando tema a $dst"
+  sudo mkdir -p "$themes_dir"
+  sudo cp -a "$src" "$dst"
+
+  step "Cambiando permisos (owner: $USER)"
+  sudo chown -R "$USER:$USER" "$dst"
+
+  # assets/ para el fondo (los scripts sync-* escriben aquí background.png)
+  sudo mkdir -p "$dst/assets"
+  if [[ -f "$PROJECT_DIR/Wallpapers/default.png" ]]; then
+    sudo cp -a "$PROJECT_DIR/Wallpapers/default.png" "$dst/assets/background.png"
+  fi
+
+  step "Generando configuración de SDDM ($conf)"
+  sudo mkdir -p /etc/sddm.conf.d
+  sudo tee "$conf" >/dev/null <<'EOF'
+[Theme]
+Current=pixel
+EOF
+
+  ok "Tema SDDM 'pixel' instalado y configurado."
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Scripts del usuario (~/.local/bin)
+# ─────────────────────────────────────────────────────────────────────────────
+# copiar_scripts_local_bin — copia .local/bin/* a ~/.local/bin sin modificarlos.
+copiar_scripts_local_bin() {
+  local src="$PROJECT_DIR/.local/bin"
+  local dst="$HOME/.local/bin"
+
+  [[ -d "$src" ]] || { warn "No existe $src (no hay scripts que copiar)."; return 0; }
+  if [[ -z "$(ls -A "$src" 2>/dev/null)" ]]; then
+    info "$src está vacío; omitiendo scripts."
+    return 0
+  fi
+
+  title "Scripts (~/.local/bin)"
+  mkdir -p "$dst"
+  cp -a "$src"/. "$dst"/
+  # No modificar contenido; solo asegurar permisos de ejecución
+  find "$dst" -maxdepth 1 -type f \( -name '*.sh' -o -name '*.py' \) -exec chmod +x {} \;
+  ok "Scripts copiados a $dst"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Flujo completo de dotfiles para uno o varios compositores
 # ─────────────────────────────────────────────────────────────────────────────
 # instalar_dotfiles <comp> [<comp> ...]
@@ -220,9 +337,15 @@ instalar_dotfiles() {
   # Instalar compartidos una sola vez
   instalar_dotfiles_compartidos
 
-  # Wallpapers y shell config (bashrc/zshrc)
+  # Wallpapers y shell config (bashrc/zshrc) + frameworks de shell
   copiar_wallpapers
+  instalar_ble_sh
+  instalar_oh_my_bash
   copiar_shell_config
+
+  # Tema SDDM y scripts del usuario
+  instalar_tema_sddm
+  copiar_scripts_local_bin
 
   # Instalar cada compositor
   for comp in "${compositores[@]}"; do
