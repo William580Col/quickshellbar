@@ -1,0 +1,10 @@
+# Generado automáticamente por matugen a partir del wallpaper activo.
+# NO editar a mano. Incluido desde ~/.config/sway/config con:
+#   include ~/.config/sway/colors
+#
+# Formato: client.<estado> <borde> <fondo> <texto> <indicador> <borde_hijo>
+# Sway no soporta degradados de 2 colores en el borde (a diferencia de
+# Hyprland), así que se usa un solo color sólido por estado.
+client.focused          #{{colors.primary.default.hex_stripped}} #{{colors.primary.default.hex_stripped}} #ffffff #{{colors.tertiary.default.hex_stripped}} #{{colors.primary.default.hex_stripped}}
+client.focused_inactive #{{colors.outline.default.hex_stripped}} #{{colors.outline.default.hex_stripped}} #ffffff #{{colors.outline.default.hex_stripped}} #{{colors.outline.default.hex_stripped}}
+client.unfocused        #{{colors.outline.default.hex_stripped}} #{{colors.outline.default.hex_stripped}} #ffffff #{{colors.outline.default.hex_stripped}} #{{colors.outline.default.hex_stripped}}

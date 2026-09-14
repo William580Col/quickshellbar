@@ -1,0 +1,18 @@
+# Generado automáticamente por matugen a partir del wallpaper activo.
+# NO editar a mano. Incluido desde ~/.config/umbriel/config.toml con:
+#   [include]
+#   files = ["colors.toml"]
+#
+# Umbriel recarga la config solo con guardar el archivo (confirmado en
+# docs.noctalia.dev/umbriel/configuration/: "Creating the user file while
+# Umbriel is running applies it automatically, as do later saves. No
+# logout or restart is needed.") — no hace falta ningún post_hook para
+# que se vea, aunque igual se puede agregar "umbriel msg config-reload"
+# por si acaso.
+#
+# Formato confirmado en docs.noctalia.dev/umbriel/appearance/#border-colors:
+# un solo color sólido por estado (Umbriel no soporta degradados de 2
+# colores en el borde, a diferencia de Hyprland/Niri).
+[colors.border]
+focused = "#c3c0ffFF"
+unfocused = "#928f9aFF"

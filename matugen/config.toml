@@ -1,0 +1,28 @@
+[config]
+prefix = "_"
+prefer = "saturation"
+
+[templates.hyprland]
+input_path = "~/.config/quickshell/matugen-templates/hyprland-colors.lua.template"
+output_path = "~/.config/hypr/colors.lua"
+# Fuerza a Hyprland a recargar su configuración y aplicar los bordes
+post_hook = "hyprctl reload"
+
+[templates.sway]
+input_path = "~/.config/quickshell/sway/matugen-templates/sway-colors.template"
+output_path = "~/.config/sway/colors"
+post_hook = "swaymsg reload"
+
+[templates.umbriel]
+input_path = "~/.config/quickshell/umbriel/matugen-templates/umbriel-colors.toml.template"
+output_path = "~/.config/umbriel/colors.toml"
+# Sin post_hook: Umbriel recarga solo con guardar el archivo.
+
+[templates.fuzzel]
+input_path = "~/.config/quickshell/sway/matugen-templates/fuzzel-colors.ini.template"
+output_path = "~/.config/fuzzel/colors.ini"
+post_hook = "pkill -SIGUSR2 fuzzel || true"
+
+[templates.quickshell_accent]
+input_path = "~/.config/quickshell/sway/matugen-templates/accent-color.txt.template"
+output_path = "~/.local/state/quickshell-accent"

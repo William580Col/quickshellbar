@@ -1,0 +1,10 @@
+# Agregar este bloque a: ~/.config/matugen/config.toml
+# (junto a los bloques [templates.fuzzel] y [templates.quickshell_accent]
+# que ya tenías de la variante Sway del shell)
+
+[templates.sway]
+input_path = "~/.config/quickshell/matugen-templates/sway-colors.template"
+output_path = "~/.config/sway/colors"
+# Recarga Sway en caliente para que los nuevos colores de borde se vean
+# al instante, sin tener que reiniciar sesión.
+post_hook = "swaymsg reload"

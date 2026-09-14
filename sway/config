@@ -1,0 +1,250 @@
+# ============================================================================
+# Config de Sway — portado desde hyprland.lua
+# Revisa y fusiona esto con tu ~/.config/sway/config real (no lo
+# sobrescribas a ciegas si ya tienes uno con otras cosas).
+# ============================================================================
+
+# ------------------
+# ---- MONITORS ----
+# ------------------
+output LVDS-1 resolution 1366x768@60Hz position 0,0 scale 1
+
+# ---------------------
+# ---- MY PROGRAMS ----
+# ---------------------
+set $terminal alacritty
+set $fileManager thunar
+set $menu fuzzel
+
+# -------------------
+# ---- AUTOSTART ----
+# -------------------
+exec wl-paste --type text --watch cliphist store
+exec wl-paste --type image --watch cliphist store
+exec quickshell -c ~/.config/quickshell/sway
+exec nm-applet --indicator
+
+# -------------------------------
+# ---- ENVIRONMENT VARIABLES ----
+# -------------------------------
+# Sway (a diferencia de Hyprland) no tiene un "hl.env()" propio en el
+# archivo de config. La forma correcta y recomendada por la wiki de Sway
+# es usar systemd environment.d, para que las variables estén disponibles
+# ANTES de que arranque cualquier programa (incluido Sway mismo si tu
+# sesión se inicia vía systemd/greetd/uwsm).
+#
+# Ver el archivo adjunto: environment.d/quickshell-sway.conf
+# Se copia a: ~/.config/environment.d/quickshell-sway.conf
+#
+# Si tu sesión NO usa systemd, la alternativa (menos confiable, algunos
+# programas ya se habrán lanzado antes de que esto surta efecto) es:
+exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+
+# -----------------------
+# ---- LOOK AND FEEL ----
+# -----------------------
+# Los colores de bordes se generan con matugen a partir del wallpaper
+# activo y se cargan aquí. Ver matugen-templates/sway-colors.template y
+# matugen-config-snippet.toml para la generación.
+include ~/.config/sway/colors
+
+gaps inner 5
+gaps outer 9
+default_border pixel 3
+default_floating_border pixel 3
+smart_borders off
+
+# Sway no tiene "layout=dwindle/master" como Hyprland: usa el modelo
+# manual de i3 (split horizontal/vertical), no hace falta configurarlo.
+# Sway tampoco soporta: rounding, active/inactive opacity globales, shadow,
+# ni animaciones de ventana — todo eso estaba desactivado en el hyprland.lua
+# original de todas formas (rounding=0, shadow=false, blur=false,
+# animations enabled=false), así que el resultado visual es equivalente.
+
+# ----------------
+# ----  MISC  ----
+# ----------------
+# force_default_wallpaper / disable_hyprland_logo / vrr son específicos de
+# Hyprland (splash/logo de bienvenida, fondo animado por defecto, VRR). Sway
+# no tiene splash screen que desactivar. Para VRR en Sway: se controla por
+# salida con "output <NOMBRE> adaptive_sync off" si tu hardware lo soporta;
+# como el original lo pone en 0 (apagado), no hace falta agregar nada aquí.
+
+# ---------------
+# ---- INPUT ----
+# ---------------
+input type:keyboard {
+    xkb_layout es
+}
+
+input type:touchpad {
+    natural_scroll disabled
+    pointer_accel 0
+}
+
+# follow_mouse=1 en Hyprland ≈ focus_follows_mouse en Sway
+focus_follows_mouse yes
+
+# Gesto de 3 dedos para cambiar de workspace: Sway NO tiene gestos de
+# touchpad configurables de forma nativa (a diferencia de Hyprland). Para
+# esto en Sway se necesitaría una herramienta externa como
+# "libinput-gestures" o "wayland-fling-gestures".
+
+# Sensibilidad por dispositivo específico ("epic-mouse-v1" en el original):
+# reemplaza el identificador de abajo por el real, que obtienes con:
+#   swaymsg -t get_inputs
+# input "1234:5678:Epic_Mouse_v1" {
+#     pointer_accel -0.5
+# }
+
+# ---------------------
+# ---- KEYBINDINGS ----
+# ---------------------
+set $mod Mod4
+
+bindsym $mod+Return exec $terminal
+bindsym $mod+Q kill
+bindsym $mod+M exec swaymsg exit
+bindsym $mod+E exec $fileManager
+bindsym $mod+V floating toggle
+bindsym $mod+D exec $menu
+
+# Super+P (pseudotile) no tiene equivalente en Sway: el modelo de i3/Sway
+# no tiene un modo "pseudo" separado del tiling normal.
+
+# Super+J (togglesplit, específico de dwindle): la aproximación más
+# cercana en Sway es alternar la orientación del contenedor enfocado.
+bindsym $mod+J layout toggle split
+
+bindsym $mod+F fullscreen toggle
+bindsym $mod+B exec firefox
+bindsym $mod+Shift+G exec steam --no-cef-sandbox
+# NOTA: el original usa Super+Escape para Heroic. Nuestro quickshell
+# también sugiere Super+Escape para abrir/cerrar el menú de apagado —
+# hay un choque. Se respeta aquí la asignación original (Heroic); si
+# quieres el menú de apagado del shell, usa el atajo alternativo
+# Super+Shift+Escape que se sugiere en el README de quickshell, o cambia
+# uno de los dos.
+bindsym $mod+Escape exec heroic
+
+bindsym $mod+Print exec grim - | tee ~/Pictures/Screenshot_$(date +'%Y%m%d_%H%M%S').png | wl-copy
+bindsym $mod+C exec gnome-calculator
+bindsym $mod+Shift+Print exec grim -g "$(slurp)" ~/Pictures/Screenshot_$(date +'%Y%m%d_%H%M%S').png
+
+# Mover foco con flechas
+bindsym $mod+Left focus left
+bindsym $mod+Right focus right
+bindsym $mod+Up focus up
+bindsym $mod+Down focus down
+
+# Cambiar de workspace / mover ventana a workspace, 1-9 y 0=10
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+bindsym $mod+6 workspace number 6
+bindsym $mod+7 workspace number 7
+bindsym $mod+8 workspace number 8
+bindsym $mod+9 workspace number 9
+bindsym $mod+0 workspace number 10
+
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+bindsym $mod+Shift+6 move container to workspace number 6
+bindsym $mod+Shift+7 move container to workspace number 7
+bindsym $mod+Shift+8 move container to workspace number 8
+bindsym $mod+Shift+9 move container to workspace number 9
+bindsym $mod+Shift+0 move container to workspace number 10
+
+# Workspace especial ("magic" en el original) ≈ scratchpad de Sway
+# (concepto similar, no idéntico: es una gaveta de ventanas flotantes)
+bindsym $mod+S scratchpad show
+bindsym $mod+Shift+S move scratchpad
+
+# Cambiar de workspace con la rueda del mouse + Super
+bindsym $mod+button4 workspace prev
+bindsym $mod+button5 workspace next
+
+# Mover/redimensionar ventanas flotantes con Super+clic (Sway lo maneja
+# solo con esta única línea, a diferencia de los dos binds de mouse que
+# necesita Hyprland)
+floating_modifier $mod normal
+
+# Teclas multimedia (funcionan igual con el teclado bloqueado, sin
+# necesitar una opción "locked" separada como en Hyprland)
+bindsym --locked XF86AudioRaiseVolume exec wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+
+bindsym --locked XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+bindsym --locked XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+bindsym --locked XF86AudioMicMute exec wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
+bindsym --locked XF86MonBrightnessUp exec brightnessctl -e4 -n2 set 5%+
+bindsym --locked XF86MonBrightnessDown exec brightnessctl -e4 -n2 set 5%-
+
+bindsym --locked XF86AudioNext exec playerctl next
+bindsym --locked XF86AudioPause exec playerctl play-pause
+bindsym --locked XF86AudioPlay exec playerctl play-pause
+bindsym --locked XF86AudioPrev exec playerctl previous
+
+# Grupos/pestañas de ventana (Super+G, Tab, Shift+Tab): Sway no tiene
+# "grupos de ventana" idénticos a Hyprland, pero el modo de layout
+# "tabbed" es conceptualmente parecido (varias ventanas apiladas con
+# pestañas visibles). El ciclo con Tab/Shift+Tab se aproxima con el foco
+# genérico entre hijos del contenedor.
+bindsym $mod+G layout toggle tabbed splith
+bindsym $mod+Tab focus next sibling
+bindsym $mod+Shift+Tab focus prev sibling
+
+# Zoom de cursor con Ctrl+Super+scroll: no existe un equivalente
+# configurable en Sway (es una función de accesibilidad específica de
+# Hyprland vía cursor.zoom_factor). Omitido.
+
+# --------------------------------
+# ---- WINDOWS AND WORKSPACES ----
+# --------------------------------
+
+# suppress-maximize-events / fix-xwayland-drags / move-hyprland-run:
+# específicos de Hyprland (manejo de eventos de protocolo y de su propio
+# lanzador "hyprland-run"), sin equivalente en Sway. Omitidos.
+
+# move-kitty (posición fija 100,100 al abrir + animación popin): Sway no
+# anima, pero sí puede fijar posición para ventanas flotantes:
+for_window [app_id="^kitty$"] move position 100 100
+
+# no_blur firefox: Sway no tiene blur en absoluto (nunca lo tuvo), así
+# que no hay nada que desactivar. Omitido.
+
+# Mover kitty al centro respecto al cursor (fórmula dinámica): no es
+# portable a Sway (no soporta posicionamiento relativo al cursor con
+# fórmulas). Omitido.
+
+# Opacidad de kitty (Sway solo soporta un valor único, no
+# activa/inactiva/fullscreen por separado como Hyprland):
+for_window [app_id="^kitty$"] opacity 0.95
+
+# Rounding de kitty: Sway nunca ha soportado esquinas redondeadas.
+# Omitido (además el original lo dejaba en 0 globalmente).
+
+# pinentry stay_focused: Sway no tiene un rule de "mantener foco forzado";
+# en la práctica pinentry suele recibir foco correctamente sin ayuda
+# adicional. Omitido.
+
+# Picture-in-Picture de Firefox y Chrome: Sway no soporta posicionamiento
+# porcentual como Hyprland ("100%-660 100%-380"), así que se usa un
+# desplazamiento fijo en píxeles — AJUSTA estos números a tu resolución
+# real, o cambia "move position 1200 700" por "move position center" si
+# prefieres algo simple y siempre correcto.
+for_window [app_id="firefox" title="Picture-in-Picture"] floating enable, sticky enable, resize set 640 360, move position 1200 700
+for_window [title="Pantalla en pantalla"] floating enable, sticky enable, resize set 640 360, move position center
+
+for_window [app_id="^mpv$"] floating enable, resize set 920 780, move position center
+
+for_window [app_id="^thunar$" title=".*[Pp]rogreso.*"] floating enable, resize set 600 300, move position center
+for_window [app_id="^thunar$" title=".*[Rr]enombrar.*"] floating enable, resize set 600 300, move position center
+
+for_window [app_id="^org.gnome.Calculator$"] floating enable, resize set 600 300, move position center
+
+# Reglas "immediate" (tearing) para juegos: Sway no soporta control de
+# tearing por ventana (ni en general). Omitido.

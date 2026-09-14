@@ -1,0 +1,20 @@
+[colors]
+background = "#211e26FF"
+text_primary = "#e6e0ebFF"
+text_muted = "#cac4d4FF"
+accent_primary = "#cebdffFF"
+accent_secondary = "#cdbff2FF"
+warning = "#ffaedbFF"
+error = "#ffb4abFF"
+insert_hint = "#ffaedb80"
+backdrop = "#494552FF"
+
+[colors.border]
+focused = "#cebdffFF"
+unfocused = "#494552FF"
+scratchpad_focused = "#ffaedbFF"
+scratchpad_unfocused = "#e070b5FF"
+outer = "#141219FF"
+
+[colors.overview]
+background_tint = "#14121988"
