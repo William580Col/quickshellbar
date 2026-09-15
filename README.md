@@ -58,6 +58,8 @@ Instala, según la distro detectada:
 |---|---|---|
 | Comositor | hyprland / sway / niri(AUR) / umbriel(AUR) | hyprland / sway / niri(manual) / umbriel(manual) |
 | Quickshell | `quickshell-git` (AUR) | `quickshell` (apt) |
+| Base | dialog, firefox | dialog, firefox-esr |
+| Fuentes | ttf-roboto, ttf-nerd-fonts-symbols | fonts-roboto + Nerd Font Symbols (GitHub) |
 | Universales | brightnessctl, wl-clipboard, networkmanager, wlsunset, imagemagick, libnotify, wireplumber, curl, swaybg | ídem con nombres apt |
 | Nerd Font | descarga universal | descarga universal |
 | cliphist | AUR | binario manual desde GitHub |
@@ -67,8 +69,9 @@ Instala, según la distro detectada:
 | awww | AUR | `cargo install --git … awww` |
 | xwayland-satellite | pacman (extra) — solo Umbriel | manual (cargo/binarios GitHub) — solo Umbriel |
 | yay (helper AUR) | auto-instala si falta | — |
-| SDDM | auto-instala si falta | auto-instala si falta |
-| oh-my-bash + ble.sh | clona a `~/.oh-my-bash` y `~/.local/share/blesh` | ídem |
+| SDDM | sddm + qt6-5compat si falta | sddm + qml6-module-qt5compat-graphicaleffects si falta |
+| oh-my-bash | curl (instalador oficial) | curl (instalador oficial) |
+| ble.sh | clona a `~/.local/share/blesh` | ídem |
 | Complementarios | fuzzel, alacritty, thunar, playerctl, nm-applet | fuzzel, alacritty, thunar, playerctl, nm-gnome |
 
 Los paquetes que no están en repos oficiales se resuelven con el helper AUR

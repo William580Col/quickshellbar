@@ -80,9 +80,26 @@ pkgs_optional() {
   fi
 }
 
+# --- Herramientas base (dialog para el instalador, firefox para los binds) -----
+pkgs_base() {
+  local d; d="$(detect_distro)"
+  if [[ "$d" == "arch" ]]; then echo "dialog firefox"
+  else echo "dialog firefox-esr"; fi
+}
+
+# --- Fuentes (Roboto + símbolos Nerd Font que pide la barra de Quickshell) -----
+pkgs_fonts() {
+  local d; d="$(detect_distro)"
+  if [[ "$d" == "arch" ]]; then echo "ttf-roboto ttf-nerd-fonts-symbols"
+  else echo "fonts-roboto"; fi
+}
+
 # --- SDDM (gestor de sesiones) ------------------------------------------------
 pkgs_sddm() {
-  echo "sddm"
+  local d; d="$(detect_distro)"
+  # El tema 'pixel' usa Qt5Compat.GraphicalEffects, que requiere qt6-5compat.
+  if [[ "$d" == "arch" ]]; then echo "sddm qt6-5compat"
+  else echo "sddm qml6-module-qt5compat-graphicaleffects"; fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -165,6 +182,23 @@ instalar_nerd_font() {
     && fc-cache -fv >/dev/null 2>&1 \
     && ok "Nerd Font instalada" \
     || { err "Falló la instalación de la Nerd Font"; }
+  rm -rf "$tmp"
+}
+
+# Símbolos Nerd Font para Debian (no están en apt) — los pide la barra de Quickshell
+instalar_nerd_symbols_debian() {
+  title "Nerd Font Symbols (Debian, vía GitHub)"
+  step "Descargando NerdFontsSymbolsOnly..."
+  mkdir -p "$HOME/.local/share/fonts"
+  local tmp; tmp="$(mktemp -d)"
+  if curl -fL -o "$tmp/Symbols.zip" \
+    https://github.com/ryanoasis/nerd-fonts/releases/latest/download/NerdFontsSymbolsOnly.zip; then
+    unzip -o "$tmp/Symbols.zip" -d "$HOME/.local/share/fonts/NerdFontsSymbolsOnly" >/dev/null
+    fc-cache -fv >/dev/null 2>&1
+    ok "Nerd Font Symbols instalados."
+  else
+    err "No se pudieron descargar los Nerd Font Symbols."
+  fi
   rm -rf "$tmp"
 }
 
@@ -274,6 +308,15 @@ instalar_dependencias() {
 
   # 0. Helper AUR: instalar yay si no hay ninguno (solo Arch)
   instalar_yay_si_falta
+
+  # 0b. Herramientas base (dialog para el instalador, firefox para los binds)
+  instalar_grupo "Herramientas base" pkgs_base
+
+  # 0c. Fuentes (Roboto + símbolos Nerd Font que pide la barra de Quickshell)
+  instalar_grupo "Fuentes" pkgs_fonts
+  if [[ "$d" == "debian" ]]; then
+    instalar_nerd_symbols_debian
+  fi
 
   # 1. Compositores (uno por cada seleccionado)
   local comp

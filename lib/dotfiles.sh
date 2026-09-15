@@ -226,22 +226,26 @@ instalar_ble_sh() {
   ok "ble.sh instalado en $dst"
 }
 
-# instalar_oh_my_bash — clona oh-my-bash en ~/.oh-my-bash
+# instalar_oh_my_bash — instala oh-my-bash vía el instalador oficial (curl)
 instalar_oh_my_bash() {
   local dst="$HOME/.oh-my-bash"
   if [[ -d "$dst" ]]; then
     info "oh-my-bash ya está instalado."
     return 0
   fi
-  if ! have git; then
-    warn "git no disponible; omitiendo oh-my-bash."
+  if ! have curl; then
+    warn "curl no disponible; omitiendo oh-my-bash."
     return 0
   fi
 
   title "Oh My Bash"
-  step "Clonando oh-my-bash..."
-  git clone --depth 1 https://github.com/ohmybash/oh-my-bash.git "$dst"
-  ok "oh-my-bash instalado en $dst"
+  step "Instalando oh-my-bash (curl)..."
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
+  if [[ -d "$dst" ]]; then
+    ok "oh-my-bash instalado en $dst"
+  else
+    warn "El instalador de oh-my-bash terminó; verifica ~/.oh-my-bash."
+  fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -28,13 +28,20 @@ sudo apt install quickshell
 **Arch:**
 ```bash
 sudo pacman -S brightnessctl wl-clipboard networkmanager wlsunset \
-    imagemagick libnotify wireplumber curl swaybg
+    imagemagick libnotify wireplumber curl swaybg dialog firefox \
+    ttf-roboto ttf-nerd-fonts-symbols
 ```
 
 **Debian:**
 ```bash
 sudo apt install brightnessctl wl-clipboard network-manager wlsunset \
-    imagemagick libnotify-bin wireplumber curl swaybg
+    imagemagick libnotify-bin wireplumber curl swaybg dialog firefox-esr \
+    fonts-roboto
+# Símbolos Nerd Font (no están en apt):
+curl -fL -o /tmp/Symbols.zip \
+    https://github.com/ryanoasis/nerd-fonts/releases/latest/download/NerdFontsSymbolsOnly.zip
+unzip -o /tmp/Symbols.zip -d ~/.local/share/fonts/NerdFontsSymbolsOnly
+fc-cache -fv
 ```
 
 Qué hace cada uno:
@@ -180,6 +187,23 @@ sudo pacman -S sway swayidle swaylock
 **Debian:**
 ```bash
 sudo apt install sway swayidle swaylock
+```
+
+---
+
+## 10b. SDDM (gestor de sesiones) y tema pixel
+
+El tema `pixel` usa `Qt5Compat.GraphicalEffects`, así que además de SDDM
+hay que instalar el módulo de compatibilidad Qt5:
+
+**Arch:**
+```bash
+sudo pacman -S sddm qt6-5compat
+```
+
+**Debian:**
+```bash
+sudo apt install sddm qml6-module-qt5compat-graphicaleffects
 ```
 
 ---
