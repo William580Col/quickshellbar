@@ -281,14 +281,16 @@ instalar_tema_sddm() {
   sudo mkdir -p "$themes_dir"
   sudo cp -a "$src" "$dst"
 
-  step "Cambiando permisos (owner: $USER)"
-  sudo chown -R "$USER:$USER" "$dst"
-
   # assets/ para el fondo (los scripts sync-* escriben aquí background.png)
   sudo mkdir -p "$dst/assets"
   if [[ -f "$PROJECT_DIR/Wallpapers/default.png" ]]; then
     sudo cp -a "$PROJECT_DIR/Wallpapers/default.png" "$dst/assets/background.png"
   fi
+
+  # Cambiar owner a $USER AL FINAL (tras crear assets/ y el fondo), para que
+  # el usuario normal pueda escribir en todo el tema sin sudo.
+  step "Cambiando permisos (owner: $USER)"
+  sudo chown -R "$USER:$USER" "$dst"
 
   step "Generando configuración de SDDM ($conf)"
   sudo mkdir -p /etc/sddm.conf.d
