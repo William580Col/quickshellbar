@@ -240,7 +240,7 @@ instalar_oh_my_bash() {
 
   title "Oh My Bash"
   step "Instalando oh-my-bash (curl)..."
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)" --unattended
   if [[ -d "$dst" ]]; then
     ok "oh-my-bash instalado en $dst"
   else
