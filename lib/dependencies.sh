@@ -4,6 +4,16 @@
 
 set -u
 
+# Paquetes adicionales seleccionados (ver install.sh → menu_paquetes).
+# "all" instala todos; si no, lista de grupos separada por comas.
+PAQUETES="${PAQUETES:-all}"
+
+# paquete_activo <grupo> — ¿está seleccionado el grupo?
+paquete_activo() {
+  local g="$1"
+  [[ "$PAQUETES" == "all" || ",${PAQUETES}," == *",${g},"* ]] && return 0 || return 1
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Definición de paquetes por distro
 #
@@ -551,38 +561,54 @@ instalar_dependencias() {
   fi
 
   # 11. Complementarios opcionales
-  if confirm "¿Instalar también los complementarios (fuzzel, alacritty, thunar, playerctl, nm-applet)? [s/N] "; then
+  if paquete_activo complementarios; then
     instalar_grupo "Complementarios" pkgs_optional
   else
-    info "Omitiendo complementarios."
+    info "Omitiendo complementarios (no seleccionados)."
   fi
 
   # 12. Herramientas de compresión (unzip/7zip/unrar)
-  instalar_grupo "Compresión (unzip / 7zip / unrar)" pkgs_compresion
-
-  # 13. Thunar (gestor de archivos) y sus dependencias
-  instalar_grupo "Thunar (gestor de archivos)" pkgs_thunar
-
-  # 14. Aplicaciones adicionales (Office, lectores, iconos, temas, Qt...)
-  instalar_grupo "Aplicaciones" pkgs_aplicaciones
-
-  # 15. OpenCode (vía script oficial de opencode.ai)
-  instalar_opencode
-
-  # 16. Flatpak: añadir el repositorio Flathub si se acaba de instalar
-  if have flatpak; then
-    if flatpak remotes --user 2>/dev/null | grep -qi flathub; then
-      info "Flathub (usuario) ya está añadido."
-    else
-      step "Añadiendo repositorio Flathub..."
-      flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo \
-        && ok "Flathub añadido." \
-        || warn "No se pudo añadir Flathub (revisa si flatpak está funcionando)."
-    fi
+  if paquete_activo compresion; then
+    instalar_grupo "Compresión (unzip / 7zip / unrar)" pkgs_compresion
+  else
+    info "Omitiendo herramientas de compresión."
   fi
 
-  # 17. Tema oscuro automático (GTK + Qt)
-  if confirm "¿Configurar tema oscuro automático (adw-gtk3-dark GTK + paleta oscura Qt via qt5ct/qt6ct, Tela-dark)? [s/N] "; then
+  # 13. Thunar (gestor de archivos) y sus dependencias
+  if paquete_activo thunar; then
+    instalar_grupo "Thunar (gestor de archivos)" pkgs_thunar
+  else
+    info "Omitiendo Thunar y sus dependencias."
+  fi
+
+  # 14. Aplicaciones adicionales (Office, lectores, iconos, temas, Qt...)
+  if paquete_activo aplicaciones; then
+    instalar_grupo "Aplicaciones" pkgs_aplicaciones
+
+    # Flatpak: añadir el repositorio Flathub si se acaba de instalar
+    if have flatpak; then
+      if flatpak remotes --user 2>/dev/null | grep -qi flathub; then
+        info "Flathub (usuario) ya está añadido."
+      else
+        step "Añadiendo repositorio Flathub..."
+        flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo \
+          && ok "Flathub añadido." \
+          || warn "No se pudo añadir Flathub (revisa si flatpak está funcionando)."
+      fi
+    fi
+  else
+    info "Omitiendo aplicaciones adicionales."
+  fi
+
+  # 15. OpenCode (vía script oficial de opencode.ai)
+  if paquete_activo opencode; then
+    instalar_opencode
+  else
+    info "Omitiendo OpenCode."
+  fi
+
+  # 16. Tema oscuro automático (GTK + Qt)
+  if paquete_activo tema_oscuro; then
     configurar_tema_oscuro
   else
     info "Omitiendo configuración de tema oscuro."

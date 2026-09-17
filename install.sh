@@ -75,6 +75,11 @@ fi
 # Modo no interactivo: se activa cuando compositor y acción llegan por CLI
 MODO_NO_INTERACTIVO=0
 
+# Paquetes adicionales a instalar con la acción deps/ambos.
+# "all" = todos; si no, lista de grupos separada por comas:
+#   compresion, thunar, aplicaciones, opencode, complementarios, tema_oscuro
+PAQUETES="all"
+
 # Seleccionar compositores (multi-selección). Devuelve códigos separados por coma.
 menu_compositor() {
   if [[ "$USAR_DIALOG" -eq 1 ]]; then
@@ -130,6 +135,56 @@ menu_accion() {
   fi
 }
 
+# nombre_paquete <grupo> — nombre legible de un grupo de paquetes
+nombre_paquete() {
+  case "$1" in
+    compresion)     echo "Compresión (unzip/7zip/unrar)" ;;
+    thunar)         echo "Thunar + dependencias (gvfs, tumbler...)" ;;
+    aplicaciones)   echo "Aplicaciones (OnlyOffice, Peazip, Geany, iconos/temas...)" ;;
+    opencode)       echo "OpenCode (AI coding agent)" ;;
+    complementarios) echo "Complementarios (fuzzel, alacritty, playerctl...)" ;;
+    tema_oscuro)    echo "Tema oscuro automático (GTK + Qt)" ;;
+    *)              echo "$1" ;;
+  esac
+}
+
+# nombres_paquetes <grupos...> — nombres legibles para confirmación
+nombres_paquetes() {
+  local -a gs=("$@") names=() g
+  for g in "${gs[@]}"; do names+=("$(nombre_paquete "$g")"); done
+  printf '%s' "${names[*]}"
+}
+
+# Seleccionar paquetes adicionales (multi-selección). Devuelve códigos separados por coma.
+menu_paquetes() {
+  local choice=""
+  if [[ "$USAR_DIALOG" -eq 1 ]]; then
+    choice="$(dialog --stdout --title "$DIALOG_TITLE" --backtitle "Paso 2.5/3 — Paquetes" \
+      --checklist "Selecciona los paquetes adicionales (espacio marca, enter confirma):" 0 0 7 \
+      compresion      "Compresión (unzip / 7zip / unrar)" on \
+      thunar          "Thunar + deps (gvfs, tumbler, file-roller...)" on \
+      aplicaciones    "Aplicaciones (OnlyOffice, Peazip, Geany, evince, iconos/temas...)" on \
+      opencode        "OpenCode (script oficial de opencode.ai)" on \
+      complementarios "Complementarios (fuzzel, alacritty, playerctl, nm-applet)" on \
+      tema_oscuro     "Tema oscuro automático GTK + Qt" on 2>/dev/null)"
+    [[ -n "$choice" ]] && tr ' ' ',' <<< "$choice" | sed 's/,\{2,\}/,/g; s/^,//; s/,$//' || echo ""
+  else
+    echo ""
+    echo "Paquetes adicionales disponibles (elige varios separados por coma o espacio):"
+    echo "  compresion      Compresión (unzip / 7zip / unrar)"
+    echo "  thunar          Thunar + dependencias"
+    echo "  aplicaciones    Aplicaciones (OnlyOffice, Peazip, Geany, iconos/temas...)"
+    echo "  opencode        OpenCode (AI coding agent)"
+    echo "  complementarios Complementarios (fuzzel, alacritty, playerctl...)"
+    echo "  tema_oscuro     Tema oscuro automático (GTK + Qt)"
+    echo "  todos           todos los anteriores"
+    local ans
+    read -r -p "Elige [ej: aplicaciones,tema_oscuro / todos]: " ans
+    ans="$(tr ' ' ',' <<< "$ans")"
+    [[ "$ans" == "todos" || "$ans" == "all" ]] && echo "compresion,thunar,aplicaciones,opencode,complementarios,tema_oscuro" || echo "$ans"
+  fi
+}
+
 # Confirmación final con resumen
 menu_confirmacion() {
   local codes_str="$1" accion="$2"
@@ -139,8 +194,16 @@ menu_confirmacion() {
   resumen+="Distro         : $(distro_name)\n"
   resumen+="Gestor         : $(pkg_manager)"
   [[ "$(aur_helper)" != "none" ]] && resumen+=" | AUR: $(aur_helper)"
-  resumen+="\nAcción          : $accion\n\n"
-  resumen+="¿Proceder con la instalación?"
+  resumen+="\nAcción          : $accion"
+  if [[ "$accion" == "deps" || "$accion" == "ambos" ]]; then
+    if [[ "$PAQUETES" == "all" ]]; then
+      resumen+="\nPaquetes        : todos los adicionales"
+    else
+      local -a pks; IFS=',' read -r -a pks <<< "$PAQUETES"
+      [[ ${#pks[@]} -gt 0 ]] && resumen+="\nPaquetes        : $(nombres_paquetes "${pks[@]}")" || resumen+="\nPaquetes        : (ninguno extra)"
+    fi
+  fi
+  resumen+="\n\n¿Proceder con la instalación?"
 
   if [[ "$USAR_DIALOG" -eq 1 ]]; then
     dialog --stdout --title "$DIALOG_TITLE" --backtitle "Paso 3/3 — Confirmar" \
@@ -172,6 +235,10 @@ Acciones:
   --dotfiles   instalar dotfiles
   --ambos      dependencias + dotfiles
   --restaurar  desinstalar dotfiles (restaura respaldos .bak-*)
+
+Paquetes adicionales (con --deps/--ambos; por defecto todos):
+  --paquetes compresion,thunar,aplicaciones,opencode,complementarios,tema_oscuro
+  Para el menú interactivo este paso aparece automáticamente.
 EOF
 }
 
@@ -246,6 +313,10 @@ main() {
       --dotfiles)  accion="dotfiles"; shift ;;
       --ambos)     accion="ambos"; shift ;;
       --restaurar) accion="restaurar"; shift ;;
+      --paquetes)
+        [[ $# -ge 2 ]] || die "Falta valor para --paquetes"
+        PAQUETES="$(tr ' ' ',' <<< "$2" | sed 's/,\{2,\}/,/g; s/^,//; s/,$//')"
+        shift 2 ;;
       *)
         err "Argumento desconocido: $arg"
         mostrar_ayuda
@@ -266,6 +337,20 @@ main() {
     [[ "$valid" -eq 0 ]] && exit 1
   fi
 
+  # Normalizar y validar lista de paquetes adicionales (si viene de CLI)
+  if [[ "$PAQUETES" != "all" && -n "$PAQUETES" ]]; then
+    PAQUETES="$(tr ' ' ',' <<< "$PAQUETES" | sed 's/,\{2,\}/,/g; s/^,//; s/,$//')"
+    local -a pks; IFS=',' read -r -a pks <<< "$PAQUETES"
+    local p validp=1
+    for p in "${pks[@]}"; do
+      case "$p" in
+        compresion|thunar|aplicaciones|opencode|complementarios|tema_oscuro) ;;
+        *) err "Grupo de paquetes no válido: $p (compresion|thunar|aplicaciones|opencode|complementarios|tema_oscuro)"; validp=0 ;;
+      esac
+    done
+    [[ "$validp" -eq 0 ]] && exit 1
+  fi
+
   # Modo interactivo si no se pasaron argumentos completos
   if [[ -z "$codes_str" ]]; then
     [[ "$USAR_DIALOG" -eq 0 ]] && { err "Se necesita dialog (y una TTY) para el modo interactivo, o pasa --compositor y una acción."; exit 1; }
@@ -279,6 +364,13 @@ main() {
     [[ -z "$accion" ]] && { echo "Cancelado."; exit 0; }
   else
     MODO_NO_INTERACTIVO=1
+  fi
+
+  # Paso 2.5: elegir paquetes adicionales (solo en interactivo y si se instalan deps)
+  if [[ "$MODO_NO_INTERACTIVO" -eq 0 && ( "$accion" == "deps" || "$accion" == "ambos" ) ]]; then
+    PAQUETES="$(menu_paquetes)"
+    # Si el usuario canceló (vació), no instalarlos; no abortar.
+    [[ -z "$PAQUETES" ]] && PAQUETES="" && info "Sin paquetes adicionales seleccionados."
   fi
 
   # Confirmación: solo en modo interactivo (dialog). En CLI se procede directo.
