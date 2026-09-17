@@ -71,7 +71,7 @@ instalar_quickshell() {
   title "Quickshell ($comp)"
 
   if ! have unzip; then
-    err "No se encontró `unzip`. Instálalo e inténtalo de nuevo."
+    err 'No se encontró unzip. Instálalo e inténtalo de nuevo.'
     return 1
   fi
 
@@ -105,16 +105,24 @@ instalar_quickshell() {
   local tmp; tmp="$(mktemp -d)"
   step "Descomprimiendo $zip"
   if unzip -o -q "$zip" -d "$tmp"; then
-    # El zip trae una carpeta raíz (quickshell/, sway/ o umbriel/)
+    # El zip trae una carpeta raíz. Buscamos la esperada ($src) y, si no
+    # existe, usamos la primera carpeta de nivel superior (el nombre puede
+    # variar, p. ej. quickshell-hyprland-wallhaven/ en vez de quickshell/).
+    local root=""
     if [[ -d "$tmp/$src" ]]; then
+      root="$tmp/$src"
+    else
+      root="$(find "$tmp" -mindepth 1 -maxdepth 1 -type d -print -quit)"
+    fi
+    if [[ -n "$root" && -d "$root" ]]; then
       backup_target "$dst"
       mkdir -p "$dst"
-      cp -a "$tmp/$src"/. "$dst"/
+      cp -a "$root"/. "$dst"/
       # Asegurar permisos de ejecución de los scripts del shell
       find "$dst" -type f -name '*.sh' -exec chmod +x {} \; 2>/dev/null
       ok "Quickshell ($comp) instalado en $dst"
     else
-      err "El zip no contiene la carpeta esperada '$src'."
+      err "El zip no contiene una carpeta raíz válida."
     fi
   else
     err "Falló la descompresión de $zip."

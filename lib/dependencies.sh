@@ -93,8 +93,8 @@ pkgs_optional() {
 # --- Herramientas base (dialog para el instalador, firefox para los binds) -----
 pkgs_base() {
   local d; d="$(detect_distro)"
-  if [[ "$d" == "arch" ]]; then echo "dialog firefox"
-  else echo "dialog firefox-esr"; fi
+  if [[ "$d" == "arch" ]]; then echo "dialog firefox nano"
+  else echo "dialog firefox-esr nano"; fi
 }
 
 # --- Fuentes (Roboto + símbolos Nerd Font que pide la barra de Quickshell) -----
