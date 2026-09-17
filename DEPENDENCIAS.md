@@ -296,10 +296,15 @@ sudo apt install thunar thunar-volman thunar-archive-plugin \
 **Arch:**
 ```bash
 sudo pacman -S firefox evince peazip geany gnome-calculator flatpak \
-    mpv papirus-icon-theme adw-gtk-theme nwg-look qt5ct qt6ct
+    mpv papirus-icon-theme adw-gtk-theme nwg-look qt5ct qt6ct \
+    tela-circle-icon-theme-standard
 # AUR
-paru -S onlyoffice-bin darkly-bin tela-icon-theme pacseek-bin
+paru -S onlyoffice-bin darkly-bin pacseek-bin
 ```
+> Nota: los iconos Tela originales (`tela-icon-theme`) solo están en AUR y su
+> compilación es muy lenta (debug por defecto). Se usa la variante oficial
+> `tela-circle-icon-theme-standard` de los repos *extra*, que es idéntica en
+> diseño y se instala al instante. El tema queda como `Tela-circle-dark`.
 
 **Debian:**
 ```bash
@@ -338,7 +343,8 @@ O en Arch también hay paquete oficial: `sudo pacman -S opencode`.
 
 - **adw-gtk-theme** (Arch) trae `adw-gtk3` y `adw-gtk3-dark` (también
   disponible vía AUR `adw-gtk-theme-git`).
-- **Tela icon** (AUR) y **Papirus** (repos) son los temas de iconos.
+- **Tela-circle icon** (repos extra; `Tela-circle`, `Tela-circle-dark`,
+  `Tela-circle-light`) y **Papirus** (repos) son los temas de iconos.
 - **Darkly** (AUR `darkly-bin`) es un estilo oscuro para aplicaciones Qt
   (fork de Lightly). Se selecciona en la UI de `qt5ct` o con
   `QT_STYLE_OVERRIDE=Darkly`.
@@ -348,7 +354,7 @@ O en Arch también hay paquete oficial: `sudo pacman -S opencode`.
 **Activación manual del tema oscuro:**
 ```bash
 gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark'
-gsettings set org.gnome.desktop.interface icon-theme 'Tela-dark'
+gsettings set org.gnome.desktop.interface icon-theme 'Tela-circle-dark'
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 ```
 
