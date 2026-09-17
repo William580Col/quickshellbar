@@ -241,18 +241,54 @@ instalar_oh_my_bash() {
     info "oh-my-bash ya está instalado."
     return 0
   fi
-  if ! have curl; then
-    warn "curl no disponible; omitiendo oh-my-bash."
-    return 0
-  fi
 
   title "Oh My Bash"
-  step "Instalando oh-my-bash (curl)..."
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)" --unattended
+
+  # Asegurar curl y git (el instalador oficial necesita curl; git para el
+  # fallback). Si hay gestor de paquetes disponible, se instalan solos.
+  if ! have curl || ! have git; then
+    local d; d="$(detect_distro)"
+    if have sudo && { have pacman || have apt; }; then
+      info "Instalando curl/git (necesarios para oh-my-bash)..."
+      if have pacman; then sudo pacman -S --needed --noconfirm curl git
+      else sudo apt install -y curl git; fi
+    fi
+    have curl || have git || {
+      err "Se necesita curl o git para instalar oh-my-bash. Omítelo e instálalo manualmente."
+      return 1
+    }
+  fi
+
+  local tmp; tmp="$(mktemp -d)"
+  local installer="$tmp/install.sh"
+
+  # 1) Instalador oficial vía curl. Ahora se descarga a un archivo real y se
+  #    comprueba que llegó entero (antes, si curl fallaba, $(...) quedaba
+  #    vacío y "bash -c ''" devolvía 0 sin instalar nada).
+  if have curl && curl -fsSL \
+      https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh \
+      -o "$installer" && [[ -s "$installer" ]]; then
+    step "Instalando oh-my-bash (instalador oficial, --unattended)..."
+    bash "$installer" --unattended
+  else
+    # 2) Fallback: clonar directamente. El ~/.bashrc del proyecto ya hace
+    #    source de $OSH/oh-my-bash.sh, así que el clone basta.
+    warn "No se pudo descargar el instalador oficial; usando git clone."
+    step "Clonando oh-my-bash (git clone)..."
+    if have git; then
+      git clone --depth 1 https://github.com/ohmybash/oh-my-bash.git "$dst"
+    else
+      err "git tampoco está disponible; oh-my-bash no instalado."
+      rm -rf "$tmp"
+      return 1
+    fi
+  fi
+  rm -rf "$tmp"
+
   if [[ -d "$dst" ]]; then
     ok "oh-my-bash instalado en $dst"
   else
-    warn "El instalador de oh-my-bash terminó; verifica ~/.oh-my-bash."
+    warn "Oh My Bash no quedó instalado en $dst. Revisa la conexión de red."
   fi
 }
 
