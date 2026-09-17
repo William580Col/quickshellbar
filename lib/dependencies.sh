@@ -135,9 +135,9 @@ pkgs_aplicaciones() {
   if [[ "$d" == "arch" ]]; then
     # tela-circle-icon-theme-standard viene en repos extra (rápido); la "Tela"
     # original de AUR compila con debug y tarda muchísimo, por eso no se usa.
-    echo "firefox evince peazip geany gnome-calculator flatpak mpv papirus-icon-theme adw-gtk-theme nwg-look qt5ct qt6ct tela-circle-icon-theme-standard __AUR__ onlyoffice-bin __AUR__ darkly-bin __AUR__ pacseek-bin"
+    echo "kitty firefox evince peazip geany gnome-calculator flatpak mpv papirus-icon-theme adw-gtk-theme nwg-look qt5ct qt6ct tela-circle-icon-theme-standard __AUR__ onlyoffice-bin __AUR__ darkly-bin __AUR__ pacseek-bin"
   else
-    echo "firefox-esr evince geany gnome-calculator flatpak mpv papirus-icon-theme qt5ct qt6ct __MANUAL__ Peazip (https://peazip.github.io/), Tela icon (github.com/vinceliuice/Tela-icon-theme), adw-gtk3 (gitlab.com/julianfairfax/package-repo), nwg-look (compilar desde source), OnlyOffice (flatpak: flatpak install flathub org.onlyoffice.desktopeditors), Darkly (github.com/Bali10050/Darkly)"
+    echo "kitty firefox-esr evince geany gnome-calculator flatpak mpv papirus-icon-theme qt5ct qt6ct __MANUAL__ Peazip (https://peazip.github.io/), Tela icon (github.com/vinceliuice/Tela-icon-theme), adw-gtk3 (gitlab.com/julianfairfax/package-repo), nwg-look (compilar desde source), OnlyOffice (flatpak: flatpak install flathub org.onlyoffice.desktopeditors), Darkly (github.com/Bali10050/Darkly)"
   fi
 }
 
