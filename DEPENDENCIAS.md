@@ -253,6 +253,112 @@ sudo apt install fuzzel alacritty thunar playerctl network-manager-gnome
 
 ---
 
+## 13. Compresión (unzip / 7zip / unrar)
+
+El `unzip` también lo necesita el instalador para extraer los `.zip` de
+Quickshell.
+
+**Arch:**
+```bash
+sudo pacman -S unzip 7zip unrar
+```
+
+**Debian:**
+```bash
+sudo apt install unzip 7zip unrar-free
+```
+(`unrar` de RARLAB está en el repo *non-free*; si lo habilitaste, usa `unrar`.)
+
+---
+
+## 14. Thunar (gestor de archivos) con todas sus dependencias
+
+Incluye montaje automático (GVFS), `thunar-volman`, plugins de archivos y
+miniaturas (`tumbler`/[libre]thumbnailer) y un archivador (`file-roller`).
+
+**Arch:**
+```bash
+sudo pacman -S thunar thunar-volman thunar-archive-plugin \
+    thunar-media-tags-plugin tumbler ffmpegthumbnailer \
+    gvfs gvfs-mtp gvfs-smb file-roller
+```
+
+**Debian:**
+```bash
+sudo apt install thunar thunar-volman thunar-archive-plugin \
+    tumbler ffmpegthumbnailer gvfs gvfs-backends gvfs-fuse file-roller
+```
+
+---
+
+## 15. Aplicaciones adicionales
+
+**Arch:**
+```bash
+sudo pacman -S firefox evince peazip geany gnome-calculator flatpak \
+    mpv papirus-icon-theme adw-gtk-theme nwg-look qt5ct qt6ct
+# AUR
+paru -S onlyoffice-bin darkly-bin tela-icon-theme pacseek-bin
+```
+
+**Debian:**
+```bash
+sudo apt install firefox-esr evince geany gnome-calculator flatpak \
+    mpv papirus-icon-theme qt5ct qt6ct
+```
+Paquetes que *no* están en apt: Peazip (https://peazip.github.io/),
+Tela icon (github.com/vinceliuice/Tela-icon-theme), adw-gtk3
+(gitlab.com/julianfairfax/package-repo), nwg-look (compilar desde source),
+OnlyOffice (flatpak: `flatpak install flathub org.onlyoffice.desktopeditors`)
+y Darkly (github.com/Bali10050/Darkly).
+
+---
+
+## 15b. OnlyOffice (oficina) y Pacseek (explorador AUR)
+
+- **OnlyOffice:** en Arch se instala vía AUR (`onlyoffice-bin`). En Debian
+  usa el Flatpak una vez añadido Flathub:
+  `flatpak install flathub org.onlyoffice.desktopeditors`.
+- **Pacseek:** explorador de paquetes de Arch desde la terminal
+  (`paru -S pacseek-bin`). Solo para Arch.
+
+---
+
+## 15c. OpenCode (AI coding agent)
+
+Instala el script oficial (funciona en Arch y Debian):
+```bash
+curl -fsSL https://opencode.ai/install | bash
+```
+O en Arch también hay paquete oficial: `sudo pacman -S opencode`.
+
+---
+
+## 15d. Temas oscuros: GTK (adw-gtk3-dark) + iconos (Tela/Papirus) + Qt (Darkly)
+
+- **adw-gtk-theme** (Arch) trae `adw-gtk3` y `adw-gtk3-dark` (también
+  disponible vía AUR `adw-gtk-theme-git`).
+- **Tela icon** (AUR) y **Papirus** (repos) son los temas de iconos.
+- **Darkly** (AUR `darkly-bin`) es un estilo oscuro para aplicaciones Qt
+  (fork de Lightly). Se selecciona en la UI de `qt5ct` o con
+  `QT_STYLE_OVERRIDE=Darkly`.
+- **nwg-look** es un selector GTK estilo LXAppearance para Wayland, útil
+  para cambiar temas/iconos/cursor sin GNOME.
+
+**Activación manual del tema oscuro:**
+```bash
+gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark'
+gsettings set org.gnome.desktop.interface icon-theme 'Tela-dark'
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+```
+
+El instalador puede hacerlo solo (paso interactivo "Configurar tema oscuro"):
+escribe `~/.config/gtk-3.0/settings.ini` y `gtk-4.0`, paletas oscuras de
+`qt5ct`/`qt6ct` y `~/.config/environment.d/theme.conf`
+(`QT_QPA_PLATFORMTHEME=qt5ct`, `GTK_THEME=adw-gtk3-dark`).
+
+---
+
 ## Orden recomendado para una instalación limpia
 
 1. Secciones 9/10/11 (tu compositor) — probablemente ya lo tienes si estás leyendo esto
@@ -261,6 +367,8 @@ sudo apt install fuzzel alacritty thunar playerctl network-manager-gnome
 4. Sección 8 (Nerd Font — hazlo pronto, o vas a ver la barra "rota" visualmente el resto del proceso)
 5. Secciones 3, 4, 5+6+7 (portapapeles, capturas, theming) en el orden que quieras
 6. Sección 12 (opcional)
+7. Secciones 13, 14 y 15 (compresión, Thunar y aplicaciones)
+8. Sección 15d (temas oscuros) — al final, tras instalar temas e iconos
 
 Después de todo esto, copia la carpeta del shell a `~/.config/quickshell/`
 (o `~/.config/quickshell/sway/` si tienes varios compositores en la misma

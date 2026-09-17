@@ -102,6 +102,33 @@ pkgs_sddm() {
   else echo "sddm qml6-module-qt5compat-graphicaleffects"; fi
 }
 
+# --- Herramientas de compresión ------------------------------------------------
+pkgs_compresion() {
+  local d; d="$(detect_distro)"
+  if [[ "$d" == "arch" ]]; then echo "unzip 7zip unrar"
+  else echo "unzip 7zip unrar-free"; fi
+}
+
+# --- Thunar (gestor de archivos) y dependencias completas ---------------------
+pkgs_thunar() {
+  local d; d="$(detect_distro)"
+  if [[ "$d" == "arch" ]]; then
+    echo "thunar thunar-volman thunar-archive-plugin thunar-media-tags-plugin tumbler ffmpegthumbnailer gvfs gvfs-mtp gvfs-smb file-roller"
+  else
+    echo "thunar thunar-volman thunar-archive-plugin tumbler ffmpegthumbnailer gvfs gvfs-backends gvfs-fuse file-roller"
+  fi
+}
+
+# --- Aplicaciones adicionales --------------------------------------------------
+pkgs_aplicaciones() {
+  local d; d="$(detect_distro)"
+  if [[ "$d" == "arch" ]]; then
+    echo "firefox evince peazip geany gnome-calculator flatpak mpv papirus-icon-theme adw-gtk-theme nwg-look qt5ct qt6ct __AUR__ onlyoffice-bin __AUR__ darkly-bin __AUR__ tela-icon-theme __AUR__ pacseek-bin"
+  else
+    echo "firefox-esr evince geany gnome-calculator flatpak mpv papirus-icon-theme qt5ct qt6ct __MANUAL__ Peazip (https://peazip.github.io/), Tela icon (github.com/vinceliuice/Tela-icon-theme), adw-gtk3 (gitlab.com/julianfairfax/package-repo), nwg-look (compilar desde source), OnlyOffice (flatpak: flatpak install flathub org.onlyoffice.desktopeditors), Darkly (github.com/Bali10050/Darkly)"
+  fi
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Instaladores primitivos
 # ─────────────────────────────────────────────────────────────────────────────
@@ -242,6 +269,157 @@ instalar_awww_debian() {
   ok "awww instalado"
 }
 
+# --- OpenCode (AI coding agent) — se instala vía su script oficial ------------
+instalar_opencode() {
+  if have opencode; then
+    info "opencode ya está instalado."
+    return 0
+  fi
+
+  title "OpenCode (AI coding agent)"
+  if ! have curl; then
+    warn "curl no disponible; omitiendo opencode."
+    return 0
+  fi
+
+  step "Instalando opencode vía script oficial..."
+  curl -fsSL https://opencode.ai/install | bash
+  if have opencode; then
+    ok "opencode instalado correctamente."
+  else
+    warn "El script de opencode terminó; verifica la instalación."
+  fi
+}
+
+# --- Configuración automática de tema oscuro (GTK + Qt) -----------------------
+# Configura adw-gtk3-dark, Tela-dark, color-scheme prefer-dark, qt5ct/qt6ct con
+# paleta oscura y variables de entorno (environment.d). Respalda archivos existentes.
+configurar_tema_oscuro() {
+  local cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+  local gtk_theme="adw-gtk3-dark"
+  local icon_theme="Tela-dark"
+  local qt_palette
+  qt_palette="$(mktemp)"
+
+  title "Tema oscuro automático (GTK + Qt)"
+
+  # --- Paleta oscura para qt5ct/qt6ct (basada en Breeze Dark) ----------------
+  cat > "$qt_palette" <<'PALETTE'
+[ColorScheme]
+active_highlight=49,140,231
+active_highlight_text=255,255,255
+active_text=252,252,252
+active_window=49,54,59
+active_window_text=239,240,241
+active_base=35,38,41
+active_base_text=239,240,241
+active_button=49,54,59
+active_button_text=239,240,241
+active_tooltip=247,247,247
+active_tooltip_text=49,54,59
+active_link=29,153,243
+active_visited=155,89,182
+inactive_highlight=49,140,231
+inactive_highlight_text=255,255,255
+inactive_text=239,240,241
+inactive_window=49,54,59
+inactive_window_text=239,240,241
+inactive_base=35,38,41
+inactive_base_text=239,240,241
+inactive_button=49,54,59
+inactive_button_text=239,240,241
+inactive_tooltip=247,247,247
+inactive_tooltip_text=49,54,59
+inactive_link=29,153,243
+inactive_visited=155,89,182
+disabled_text=127,130,137
+disabled_window_text=127,130,137
+disabled_base_text=127,130,137
+disabled_button=49,54,59
+disabled_button_text=127,130,137
+disabled_tooltip=247,247,247
+disabled_tooltip_text=127,130,137
+disabled_highlight=100,100,100
+disabled_highlight_text=127,130,137
+disabled_link=29,153,243
+disabled_visited=155,89,182
+PALETTE
+
+  # --- Qt5: qt5ct -----------------------------------------------------------
+  mkdir -p "$cfg/qt5ct/colors"
+  backup_target "$cfg/qt5ct/qt5ct.conf"
+  cp "$qt_palette" "$cfg/qt5ct/colors/dark.conf"
+  cat > "$cfg/qt5ct/qt5ct.conf" <<QT5CT
+[Appearance]
+custom_palette=true
+color_scheme_path=$cfg/qt5ct/colors/dark.conf
+icon_theme=$icon_theme
+style=Fusion
+standard_dialogs=default
+ui_style=default
+QT5CT
+  ok "qt5ct configurado (tema oscuro, paleta Breeze Dark)"
+
+  # --- Qt6: qt6ct -----------------------------------------------------------
+  mkdir -p "$cfg/qt6ct/colors"
+  backup_target "$cfg/qt6ct/qt6ct.conf"
+  cp "$qt_palette" "$cfg/qt6ct/colors/dark.conf"
+  cat > "$cfg/qt6ct/qt6ct.conf" <<QT6CT
+[Appearance]
+custom_palette=true
+color_scheme_path=$cfg/qt6ct/colors/dark.conf
+icon_theme=$icon_theme
+style=Fusion
+standard_dialogs=default
+QT6CT
+  ok "qt6ct configurado (tema oscuro, paleta Breeze Dark)"
+  rm -f "$qt_palette"
+
+  # --- environment.d: variables de entorno para Qt y GTK --------------------
+  mkdir -p "$cfg/environment.d"
+  backup_target "$cfg/environment.d/theme.conf"
+  cat > "$cfg/environment.d/theme.conf" <<ENVEOF
+QT_QPA_PLATFORMTHEME=qt5ct
+GTK_THEME=$gtk_theme
+ENVEOF
+  ok "environment.d/theme.conf escrito (QT_QPA_PLATFORMTHEME, GTK_THEME)"
+
+  # --- GTK 3.0 settings.ini ------------------------------------------------
+  mkdir -p "$cfg/gtk-3.0"
+  backup_target "$cfg/gtk-3.0/settings.ini"
+  cat > "$cfg/gtk-3.0/settings.ini" <<GTK3
+[Settings]
+gtk-theme-name=$gtk_theme
+gtk-icon-theme-name=$icon_theme
+gtk-color-scheme=prefer-dark
+gtk-application-prefer-dark-theme=1
+GTK3
+  ok "gtk-3.0/settings.ini configurado (tema oscuro)"
+
+  # --- GTK 4.0 settings.ini ------------------------------------------------
+  mkdir -p "$cfg/gtk-4.0"
+  backup_target "$cfg/gtk-4.0/settings.ini"
+  cat > "$cfg/gtk-4.0/settings.ini" <<GTK4
+[Settings]
+gtk-theme-name=$gtk_theme
+gtk-icon-theme-name=$icon_theme
+gtk-color-scheme=prefer-dark
+gtk-application-prefer-dark-theme=1
+GTK4
+  ok "gtk-4.0/settings.ini configurado (tema oscuro)"
+
+  # --- gsettings (si hay sesión GNOME / DE que lo soporte) -----------------
+  if have gsettings; then
+    step "Aplicando gsettings (color-scheme, gtk-theme, icon-theme)..."
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface icon-theme "$icon_theme" 2>/dev/null || true
+    ok "gsettings aplicado (errores ignorados si no hay sesión)."
+  fi
+
+  ok "Tema oscuro configurado: GTK=$gtk_theme | Iconos=$icon_theme | Qt=paleta oscura (qt5ct/qt6ct)"
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Instalación orquestada de un grupo de paquetes, resolviendo AUR/manual
 # ─────────────────────────────────────────────────────────────────────────────
@@ -377,6 +555,37 @@ instalar_dependencias() {
     instalar_grupo "Complementarios" pkgs_optional
   else
     info "Omitiendo complementarios."
+  fi
+
+  # 12. Herramientas de compresión (unzip/7zip/unrar)
+  instalar_grupo "Compresión (unzip / 7zip / unrar)" pkgs_compresion
+
+  # 13. Thunar (gestor de archivos) y sus dependencias
+  instalar_grupo "Thunar (gestor de archivos)" pkgs_thunar
+
+  # 14. Aplicaciones adicionales (Office, lectores, iconos, temas, Qt...)
+  instalar_grupo "Aplicaciones" pkgs_aplicaciones
+
+  # 15. OpenCode (vía script oficial de opencode.ai)
+  instalar_opencode
+
+  # 16. Flatpak: añadir el repositorio Flathub si se acaba de instalar
+  if have flatpak; then
+    if flatpak remotes --user 2>/dev/null | grep -qi flathub; then
+      info "Flathub (usuario) ya está añadido."
+    else
+      step "Añadiendo repositorio Flathub..."
+      flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo \
+        && ok "Flathub añadido." \
+        || warn "No se pudo añadir Flathub (revisa si flatpak está funcionando)."
+    fi
+  fi
+
+  # 17. Tema oscuro automático (GTK + Qt)
+  if confirm "¿Configurar tema oscuro automático (adw-gtk3-dark GTK + paleta oscura Qt via qt5ct/qt6ct, Tela-dark)? [s/N] "; then
+    configurar_tema_oscuro
+  else
+    info "Omitiendo configuración de tema oscuro."
   fi
 
   ok "Dependencias instaladas para: ${compositores[*]}"
