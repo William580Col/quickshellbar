@@ -1,5 +1,6 @@
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.npm-global/bin:$PATH"
+export PATH="$HOME/.opencode/bin:$PATH"
 #    _               _              
 #   | |__   __ _ ___| |__  _ __ ___ 
 #   | '_ \ / _` / __| '_ \| '__/ __|

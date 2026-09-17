@@ -288,18 +288,37 @@ instalar_opencode() {
     return 0
   fi
 
+  local bin="$HOME/.opencode/bin/opencode"
+  if [[ -x "$bin" ]]; then
+    info "opencode ya está instalado en $bin."
+    return 0
+  fi
+
   title "OpenCode (AI coding agent)"
   if ! have curl; then
     warn "curl no disponible; omitiendo opencode."
     return 0
   fi
 
-  step "Instalando opencode vía script oficial..."
-  curl -fsSL https://opencode.ai/install | bash
-  if have opencode; then
-    ok "opencode instalado correctamente."
+  # Se descarga a un archivo y se verifica; antes era `curl | bash` y, si
+  # curl fallaba, bash recibía stdin vacío y devolvía 0 sin instalar nada.
+  local tmp; tmp="$(mktemp -d)"
+  local installer="$tmp/install.sh"
+  if curl -fsSL https://opencode.ai/install -o "$installer" && [[ -s "$installer" ]]; then
+    step "Instalando opencode vía script oficial..."
+    bash "$installer"
   else
-    warn "El script de opencode terminó; verifica la instalación."
+    err "No se pudo descargar el instalador de opencode. Revisa la conexión."
+    rm -rf "$tmp"
+    return 1
+  fi
+  rm -rf "$tmp"
+
+  if have opencode || [[ -x "$bin" ]]; then
+    ok "opencode instalado correctamente."
+    info "Binario: $bin (el ~/.bashrc y ~/.zshrc del proyecto ya incluyen ~/.opencode/bin en el PATH)."
+  else
+    warn "opencode no quedó instalado. Revisa la conexión y vuelve a ejecutar --deps."
   fi
 }
 
