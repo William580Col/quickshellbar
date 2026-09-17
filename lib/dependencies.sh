@@ -562,6 +562,28 @@ instalar_dependencias() {
     instalar_grupo "SDDM (gestor de sesiones)" pkgs_sddm
   fi
 
+  # 10.1 Habilitar SDDM como gestor de sesiones (si no hay otro DM activo)
+  if have sddm && have systemctl; then
+    local dm_activo=""
+    local dm
+    for dm in display-manager lightdm gdm lxdm sddm; do
+      if systemctl is-enabled "$dm.service" >/dev/null 2>&1; then
+        dm_activo="$dm"
+        break
+      fi
+    done
+    if [[ -z "$dm_activo" || "$dm_activo" == "sddm" ]]; then
+      if systemctl is-enabled sddm.service >/dev/null 2>&1; then
+        info "SDDM ya está habilitado."
+      else
+        sudo systemctl enable sddm.service
+        ok "SDDM habilitado para el arranque."
+      fi
+    else
+      warn "Se detectó otro gestor activo ($dm_activo); no se habilita SDDM."
+    fi
+  fi
+
   # 11. Complementarios opcionales
   if paquete_activo complementarios; then
     instalar_grupo "Complementarios" pkgs_optional
