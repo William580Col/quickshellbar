@@ -700,6 +700,14 @@ blur_ignore_alpha = 0.5
 blur_popups = true
 blur_optimized = false
 
+# Quickshell (umbriel Bar.qml usa WlrLayershell.namespace "quickshell"):
+# blur real sobre la barra/paneles con glassEffect (alpha 0.82).
+[[layer_rule]]
+match.namespace = "quickshell"
+blur = true
+blur_ignore_alpha = 0.5
+blur_popups = true
+
 # ────────────────────────────── Animation ───────────────────────────────────
 # Parent values provide defaults for every event table. Nested values override
 # only that event. Disable one event to make just that transition instant.

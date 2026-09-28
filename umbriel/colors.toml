@@ -14,5 +14,5 @@
 # un solo color sólido por estado (Umbriel no soporta degradados de 2
 # colores en el borde, a diferencia de Hyprland/Niri).
 [colors.border]
-focused = "#c3c0ffFF"
-unfocused = "#928f9aFF"
+focused = "#ffb4abFF"
+unfocused = "#a08c8aFF"

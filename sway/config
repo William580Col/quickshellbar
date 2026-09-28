@@ -12,7 +12,7 @@ output LVDS-1 resolution 1366x768@60Hz position 0,0 scale 1
 # ---------------------
 # ---- MY PROGRAMS ----
 # ---------------------
-set $terminal alacritty
+set $terminal kitty
 set $fileManager thunar
 set $menu fuzzel
 
@@ -197,9 +197,16 @@ bindsym $mod+G layout toggle tabbed splith
 bindsym $mod+Tab focus next sibling
 bindsym $mod+Shift+Tab focus prev sibling
 
-# Zoom de cursor con Ctrl+Super+scroll: no existe un equivalente
-# configurable en Sway (es una función de accesibilidad específica de
-# Hyprland vía cursor.zoom_factor). Omitido.
+# Zoom con Win+Ctrl+rueda (requiere: yay -S shmooz)
+# Sway no tiene cursor.zoom_factor como Hyprland, así que se usa shmooz
+# como lupa fullscreen: entras con el atajo, luego rueda = zoom al
+# puntero, arrastre izq = pan, +/- = zoom centro, 0 = reset,
+# clic-der / Esc = salir.
+set $zoom_start shmooz --zoom-in 15%
+bindsym --whole-window $mod+Ctrl+button4 exec $zoom_start
+bindsym --whole-window $mod+Ctrl+button5 exec $zoom_start
+# Alternativa por teclado (misma función, útil si la rueda no responde)
+bindsym $mod+Ctrl+z exec pgrep shmooz && killall shmooz || $zoom_start
 
 # --------------------------------
 # ---- WINDOWS AND WORKSPACES ----
@@ -236,7 +243,7 @@ for_window [app_id="^kitty$"] opacity 0.95
 # desplazamiento fijo en píxeles — AJUSTA estos números a tu resolución
 # real, o cambia "move position 1200 700" por "move position center" si
 # prefieres algo simple y siempre correcto.
-for_window [app_id="firefox" title="Picture-in-Picture"] floating enable, sticky enable, resize set 640 360, move position 1200 700
+for_window [app_id="firefox" title="Picture-in-Picture"] floating enable, sticky enable, resize set 640 360, move position 717 9
 for_window [title="Pantalla en pantalla"] floating enable, sticky enable, resize set 640 360, move position center
 
 for_window [app_id="^mpv$"] floating enable, resize set 920 780, move position center

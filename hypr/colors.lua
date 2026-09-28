@@ -2,10 +2,10 @@
 -- NO editar a mano: se sobreescribe cada vez que cambias de wallpaper.
 return {
     active_border = {
-        colors = { "rgba(8ecff2ee)", "rgba(c9c2eaee)" },
+        colors = { "rgba(ffb4abee)", "rgba(e0c38cee)" },
         angle = 45,
     },
-    inactive_border = "rgba(8a9297aa)",
+    inactive_border = "rgba(a08c8aaa)",
 }
 
 

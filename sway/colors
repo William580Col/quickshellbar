@@ -5,6 +5,6 @@
 # Formato: client.<estado> <borde> <fondo> <texto> <indicador> <borde_hijo>
 # Sway no soporta degradados de 2 colores en el borde (a diferencia de
 # Hyprland), así que se usa un solo color sólido por estado.
-client.focused          #89d6b9 #89d6b9 #ffffff #a7cce1 #89d6b9
-client.focused_inactive #89938d #89938d #ffffff #89938d #89938d
-client.unfocused        #89938d #89938d #ffffff #89938d #89938d
+client.focused          #ffb4ab #ffb4ab #ffffff #e0c38c #ffb4ab
+client.focused_inactive #a08c8a #a08c8a #ffffff #a08c8a #a08c8a
+client.unfocused        #a08c8a #a08c8a #ffffff #a08c8a #a08c8a

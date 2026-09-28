@@ -130,7 +130,13 @@ hl.config({
         active_opacity = 1.0,
         inactive_opacity = 1.0,
         shadow = { enabled = false },
-        blur = { enabled = false },
+        blur = {
+            enabled = true,
+            passes = 3,
+            size = 7,
+            radius = 7,
+            noise = 0.02,
+        },
     },
 
     animations = {
@@ -459,3 +465,13 @@ hl.window_rule({
 hl.window_rule({ match = { class = "^steam_app_.*" }, immediate = true })
 hl.window_rule({ match = { class = "^heroic$" },      immediate = true })
 hl.window_rule({ match = { class = "^gamescope$" },   immediate = true })
+
+-- Efecto cristal quickshell: blur real sobre Bar/Launcher/PowerMenu
+-- (PanelWindow color transparent + BarConfig.surfaceColor alpha 0.82).
+-- Sombras y animaciones siguen desactivadas; solo blur.
+hl.layer_rule({
+    name  = "quickshell-blur",
+    match = { namespace = "quickshell" },
+    blur = true,
+    ignore_alpha = 0.25,
+})

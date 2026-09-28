@@ -1,5 +1,5 @@
 [general]
-import = ["~/.config/alacritty/themes/noctalia.toml"]
+import = ["~/.config/alacritty/matugen.toml"]
 
 [window]
 padding = { x = 8, y = 8 }
@@ -28,7 +28,3 @@ style = "Bold Italic"
 
 [cursor]
 style = { shape = "Beam", blinking = "On" }
-
-[colors.primary]
-background = "#1e1e2e"
-foreground = "#cdd6f4"
