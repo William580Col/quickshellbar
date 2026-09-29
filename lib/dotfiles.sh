@@ -207,6 +207,20 @@ copiar_shell_config() {
   else
     warn "No existe shell/zshrc en el proyecto."
   fi
+
+  # Tema modern personalizado del prompt (oh-my-bash).
+  # Va en custom/ para no bloquear los updates del repo upstream.
+  if [[ -f "$PROJECT_DIR/shell/oh-my-bash-themes/modern.theme.sh" ]]; then
+    if [[ -d "$HOME/.oh-my-bash" ]]; then
+      mkdir -p "$HOME/.oh-my-bash/custom/themes/modern"
+      backup_target "$HOME/.oh-my-bash/custom/themes/modern/modern.theme.sh"
+      cp -a "$PROJECT_DIR/shell/oh-my-bash-themes/modern.theme.sh" \
+        "$HOME/.oh-my-bash/custom/themes/modern/modern.theme.sh"
+      ok "Instalado tema modern en oh-my-bash (custom/)"
+    else
+      warn "~/.oh-my-bash no existe; omitiendo tema modern."
+    fi
+  fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
