@@ -56,7 +56,7 @@ function _omb_theme_PROMPT_COMMAND() {
   local r=$'\e[0m'
   local dim="${S}\e[2m${E}"
 
-  local cw pur txt ok err
+  local cw cu pur txt ok err
   local b_user b_user_fg b_dir b_dir_fg b_git b_git_fg b_time b_time_fg
 
   if _aether_reload; then
@@ -65,13 +65,15 @@ function _omb_theme_PROMPT_COMMAND() {
     local dbg=$(_aether_get dark_bg "#090503")
     local kbg=$(_aether_get darker_bg "#060302")
 
-    cw="${S}$(_aether_col "$(_aether_get foreground '#EEAB61')" 38 1)${E}"
+    cw="${S}$(_aether_col "$(_aether_get accent '#EEAB61')" 38 1)${E}"
     pur="${S}$(_aether_col "$(_aether_get accent '#b4666c')" 38 1)${E}"
     txt="${S}$(_aether_col "$(_aether_get color15 '#fef3ec')")${E}"
-    ok="${S}$(_aether_col "$(_aether_get green '#edb96e')" 38 1)${E}"
+    ok="${S}$(_aether_col "$(_aether_get accent '#edb96e')" 38 1)${E}"
     err="${S}$(_aether_col "$(_aether_get red '#c48465')" 38 1)${E}"
 
-    b_user="${S}$(_aether_col "$lbg" 48)${E}";  b_user_fg="${S}$(_aether_col "$lbg" 38)${E}"
+    local acc=$(_aether_get accent "#EEAB61")
+    b_user="${S}$(_aether_col "$acc" 48)${E}";  b_user_fg="${S}$(_aether_col "$acc" 38)${E}"
+    cu="${S}$(_aether_col "$mbg" 38 1)${E}"
     b_dir="${S}$(_aether_col "$mbg" 48)${E}";   b_dir_fg="${S}$(_aether_col "$mbg" 38)${E}"
     b_git="${S}$(_aether_col "$dbg" 48)${E}";   b_git_fg="${S}$(_aether_col "$dbg" 38)${E}"
     b_time="${S}$(_aether_col "$kbg" 48)${E}";  b_time_fg="${S}$(_aether_col "$kbg" 38)${E}"
@@ -82,6 +84,7 @@ function _omb_theme_PROMPT_COMMAND() {
     ok="${S}\e[1;38;5;82m${E}"
     err="${S}\e[1;38;5;203m${E}"
     b_user="${S}\e[48;5;24m${E}";    b_user_fg="${S}\e[38;5;24m${E}"
+    cu="${S}\e[1;38;5;255m${E}"
     b_dir="${S}\e[48;5;239m${E}";    b_dir_fg="${S}\e[38;5;239m${E}"
     b_git="${S}\e[48;5;236m${E}";    b_git_fg="${S}\e[38;5;236m${E}"
     b_time="${S}\e[48;5;235m${E}";   b_time_fg="${S}\e[38;5;235m${E}"
@@ -97,7 +100,7 @@ function _omb_theme_PROMPT_COMMAND() {
   local arr=$'\u276f'      # ❯ prompt
   local dot=$'\u25cf'      # ● error dot
 
-  local userchip="${b_user}${cw} ${i_user} \u@\h "
+  local userchip="${b_user}${cu} ${i_user} \u@\h "
   local dirchip="${b_dir}${cw} ${i_dir} \w "
   local timechip="${dim}${txt} ${i_time} \t${E}${r}"
 
