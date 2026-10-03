@@ -136,7 +136,6 @@ hl.config({
             enabled = true,
             passes = 3,
             size = 7,
-            radius = 7,
             noise = 0.02,
         },
     },
