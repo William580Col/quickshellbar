@@ -417,6 +417,18 @@ instalar_dotfiles() {
     instalar_quickshell "$comp"
   done
 
+  # Autoconfiguración de resolución/salida de monitor según el hardware real
+  # de cada PC (no fatal: si falla, los compositores usan su autoconfig).
+  local autoconf="$PROJECT_DIR/.local/bin/autoconf-monitor.sh"
+  if [[ -x "$autoconf" ]]; then
+    step "Autoconfigurando resolución/salida de monitor"
+    if ! "$autoconf" "${compositores[@]}"; then
+      warn "autoconf-monitor.sh devolvió error; continúo sin reescribir el bloque de monitor."
+    fi
+  else
+    warn "No encontré $autoconf; omito la autoconfig de monitores."
+  fi
+
   ok "Dotfiles completos para: ${compositores[*]}"
 }
 

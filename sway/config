@@ -7,7 +7,9 @@
 # ------------------
 # ---- MONITORS ----
 # ------------------
+# >>> autoconf-monitor >>>
 output LVDS-1 resolution 1366x768@60Hz position 0,0 scale 1
+# <<< autoconf-monitor <<<
 
 # ---------------------
 # ---- MY PROGRAMS ----

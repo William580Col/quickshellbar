@@ -93,6 +93,22 @@ Copia las configuraciones a `~/.config/` (respaldando lo existente con sufijo
 - **Niri:** `niri/` → `~/.config/niri/` (config modular en `config.d/`)
 - **Umbriel:** `umbriel/` → `~/.config/umbriel/`
 
+Tras copiar, ejecuta **`.local/bin/autoconf-monitor.sh`**: detecta las salidas
+de vídeo reales (sesión del compositor → `wlr-randr`/`xrandr` → `/sys/class/drm`
+en modo headless) y reescribe el bloque de monitor de cada WM seleccionado
+(regiones delimitadas por marcadores `>>> autoconf-monitor >>>` en
+`hyprland.lua`, `sway/config`, `config.toml` de Umbriel y `90-user-extra.kdl`
+de Niri), de modo que cada PC queda configurada con su resolución real en vez
+de la del equipo de desarrollo. Si no detecta nada, deja la región vacía y el
+compositor auto-configura (evita pantalla negra). Reutilizable a mano:
+
+```bash
+~/.local/bin/autoconf-monitor.sh              # las 4 variantes
+~/.local/bin/autoconf-monitor.sh sway         # solo una
+~/.local/bin/autoconf-monitor.sh --dry-run    # ver qué cambiaría
+~/.local/bin/autoconf-monitor.sh --headless   # forzar detección por DRM
+```
+
 Y descomprime la variante de Quickshell correspondiente:
 
 | Zip | Destino |
@@ -139,6 +155,13 @@ proyecto/
 > el fondo sin sudo) y se genera `/etc/sddm.conf.d/99-pixel-theme.conf` con
 > `Current=pixel`. Los scripts `sync-pixel-sddm.py` y `sync-sway-sddm.sh` se
 > copian a `~/.local/bin` **sin modificar** (son correctos tal cual).
+>
+> **Sincronización automática:** el `Wallpaper.qml` de las 3 variantes de
+> Quickshell dispara `~/.local/bin/sync-sway-sddm.sh <ruta>` cada vez que cambia
+> el wallpaper (panel, aleatorio, IPC o al iniciar sesión), así que el fondo de
+> SDDM sigue siempre al de Quickshell. `sync-sway-sddm.sh` también admite la
+> ruta como argumento opcional; sin argumentos detecta el fondo activo (uso
+> manual vía el `.desktop`).
 
 ## Prueba sin tocar tu sistema
 

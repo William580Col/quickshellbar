@@ -6,29 +6,43 @@ WALLPAPERS_DIR="${HOME}/Pictures/Wallpapers"
 
 WALLPAPER=""
 
-echo "[Sway-SDDM] Detectando fondo de pantalla activo..."
+# 0. Argumento opcional $1 = ruta al wallpaper. Lo usa quickshell cada vez
+#    que cambia el fondo (services/Wallpaper.qml → set()): si la ruta
+#    existe se usa directamente, saltando la detección de fondo vivo.
+#    Sin argumentos se mantiene el comportamiento anterior (p.ej. el
+#    lanzador .desktop, que llama al script sin args).
+if [ -n "${1:-}" ] && [ -f "$1" ]; then
+    WALLPAPER="$1"
+    echo "[Sway-SDDM] ✓ Fondo recibido como argumento: $WALLPAPER"
+else
+    if [ -n "${1:-}" ]; then
+        echo "[Sway-SDDM] ⚠ El argumento no es un fichero válido: $1. Se detecta el fondo activo."
+    fi
 
-# 1. awww (mantenido activamente) o swww (legado) — usado en Sway/Umbriel
-if command -v awww &> /dev/null && awww query &> /dev/null; then
-    WALLPAPER=$(awww query | awk -F 'image: ' '{print $2}' | head -n 1)
-elif command -v swww &> /dev/null && swww query &> /dev/null; then
-    WALLPAPER=$(swww query | awk -F 'image: ' '{print $2}' | head -n 1)
+    echo "[Sway-SDDM] Detectando fondo de pantalla activo..."
 
-# 2. hyprpaper — usado normalmente en Hyprland
-# Formato de salida: "eDP-1: /home/user/wallpapers/wp1.jpg" (una línea por monitor)
-elif command -v hyprctl &> /dev/null && hyprctl hyprpaper listactive &> /dev/null; then
-    WALLPAPER=$(hyprctl hyprpaper listactive | head -n 1 | sed 's/^[^:]*: *//')
+    # 1. awww (mantenido activamente) o swww (legado) — usado en Sway/Umbriel
+    if command -v awww &> /dev/null && awww query &> /dev/null; then
+        WALLPAPER=$(awww query | awk -F 'image: ' '{print $2}' | head -n 1)
+    elif command -v swww &> /dev/null && swww query &> /dev/null; then
+        WALLPAPER=$(swww query | awk -F 'image: ' '{print $2}' | head -n 1)
 
-# 3. swaybg — fallback genérico por proceso, sin depender del compositor
-elif pgrep -x "swaybg" &> /dev/null; then
-    WALLPAPER=$(ps aux | grep '[s]waybg' | grep -oE '\-i\s+[^ ]+' | awk '{print $2}' | sed "s|~|$HOME|")
-fi
+    # 2. hyprpaper — usado normalmente en Hyprland
+    # Formato de salida: "eDP-1: /home/user/wallpapers/wp1.jpg" (una línea por monitor)
+    elif command -v hyprctl &> /dev/null && hyprctl hyprpaper listactive &> /dev/null; then
+        WALLPAPER=$(hyprctl hyprpaper listactive | head -n 1 | sed 's/^[^:]*: *//')
 
-# 4. Validación y fallback al directorio de Wallpapers si la detección automática falla
-if [ -z "$WALLPAPER" ] || [ ! -f "$WALLPAPER" ]; then
-    echo "[Sway-SDDM] ⚠ No se detectó un proceso activo (awww/hyprpaper/swaybg). Buscando el archivo más reciente en $WALLPAPERS_DIR..."
-    if [ -d "$WALLPAPERS_DIR" ]; then
-        WALLPAPER=$(find "$WALLPAPERS_DIR" -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.mp4" -o -name "*.webm" \) -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d' ')
+    # 3. swaybg — fallback genérico por proceso, sin depender del compositor
+    elif pgrep -x "swaybg" &> /dev/null; then
+        WALLPAPER=$(ps aux | grep '[s]waybg' | grep -oE '\-i\s+[^ ]+' | awk '{print $2}' | sed "s|~|$HOME|")
+    fi
+
+    # 4. Validación y fallback al directorio de Wallpapers si la detección automática falla
+    if [ -z "$WALLPAPER" ] || [ ! -f "$WALLPAPER" ]; then
+        echo "[Sway-SDDM] ⚠ No se detectó un proceso activo (awww/hyprpaper/swaybg). Buscando el archivo más reciente en $WALLPAPERS_DIR..."
+        if [ -d "$WALLPAPERS_DIR" ]; then
+            WALLPAPER=$(find "$WALLPAPERS_DIR" -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.mp4" -o -name "*.webm" \) -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d' ')
+        fi
     fi
 fi
 
