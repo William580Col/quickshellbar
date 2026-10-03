@@ -147,6 +147,15 @@ proyecto/
 > existente. Además se instalan **oh-my-bash** (`~/.oh-my-bash`) y **ble.sh**
 > (`~/.local/share/blesh`), que el `bashrc` ya carga.
 >
+> **Nota prompt:** `shell/bashrc` fija `OSH_THEME="modern"` y el instalador
+> instala el tema en `custom/themes/modern/` **y** en `themes/modern/` de
+> oh-my-bash (con respaldo `.bak` la primera vez), de modo que en una
+> instalación limpia queda el prompt modern y no el genérico de bash. Al final
+> de `--dotfiles` se genera `~/.config/aether/theme/colors.toml` con matugen
+> (colores del wallpaper) si aún no existe; a partir de ahí la cadena unificada
+> de quickshell (`Wallpaper.qml → apply-colors.sh → matugen`) lo regenera en
+> cada cambio de wallpaper y el prompt se recolorea solo.
+>
 > **Nota wallpapers:** se copian a `~/Pictures/Wallpapers/` y **no** se eliminan
 > al ejecutar `--restaurar` (son archivos del usuario, no config del script).
 >

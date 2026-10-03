@@ -189,6 +189,9 @@ copiar_wallpapers() {
 # ─────────────────────────────────────────────────────────────────────────────
 # copiar_shell_config — copia shell/bashrc y shell/zshrc a ~/.
 #   No sobrescribe a ciegas: respalda el existente y avisa.
+#   IMPORTANTE: se llama DESPUÉS de instalar_oh_my_bash(), porque el
+#   instalador oficial de OMB escribe su propia plantilla en ~/.bashrc; el
+#   ~/.bashrc del proyecto (con OSH_THEME="modern") gana siempre.
 copiar_shell_config() {
   title "Shell config (bashrc / zshrc)"
 
@@ -209,18 +212,34 @@ copiar_shell_config() {
   fi
 
   # Tema modern personalizado del prompt (oh-my-bash).
-  # Va en custom/ para no bloquear los updates del repo upstream.
+  # Va en custom/ para no bloquear los updates del repo upstream: al resolver
+  # un tema, OMB prueba primero $OSH_CUSTOM/themes/<tema> y después
+  # $OSH/themes/<tema>, así que custom/ tiene prioridad. Aun así también
+  # sobrescribimos el upstream de themes/ (respaldándolo en .bak la primera
+  # vez) para que el prompt sea idéntico aunque OSH_CUSTOM apunte a otra ruta.
   if [[ -f "$PROJECT_DIR/shell/oh-my-bash-themes/modern.theme.sh" ]]; then
     if [[ -d "$HOME/.oh-my-bash" ]]; then
-      mkdir -p "$HOME/.oh-my-bash/custom/themes/modern"
-      backup_target "$HOME/.oh-my-bash/custom/themes/modern/modern.theme.sh"
-      cp -a "$PROJECT_DIR/shell/oh-my-bash-themes/modern.theme.sh" \
-        "$HOME/.oh-my-bash/custom/themes/modern/modern.theme.sh"
-      ok "Instalado tema modern en oh-my-bash (custom/)"
+      _instalar_tema_modern "$HOME/.oh-my-bash/custom/themes/modern/modern.theme.sh"
+      _instalar_tema_modern "$HOME/.oh-my-bash/themes/modern/modern.theme.sh"
+      ok "Tema modern de oh-my-bash instalado"
     else
       warn "~/.oh-my-bash no existe; omitiendo tema modern."
     fi
   fi
+}
+
+# _instalar_tema_modern <destino> — copia shell/oh-my-bash-themes/modern.theme.sh
+# a <destino> de forma idempotente: si el destino ya es idéntico no hace nada;
+# si hay que sobrescribirlo, guarda el original en <destino>.bak una sola vez.
+_instalar_tema_modern() {
+  local src="$PROJECT_DIR/shell/oh-my-bash-themes/modern.theme.sh" dst="$1"
+  mkdir -p "$(dirname "$dst")"
+  cmp -s "$src" "$dst" 2>/dev/null && return 0
+  if [[ -f "$dst" && ! -e "$dst.bak" ]]; then
+    cp -a "$dst" "$dst.bak"
+    warn "Respaldado tema original: $dst.bak"
+  fi
+  cp -a "$src" "$dst"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -304,6 +323,130 @@ instalar_oh_my_bash() {
   else
     warn "Oh My Bash no quedó instalado en $dst. Revisa la conexión de red."
   fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Colores del prompt bash: matugen -> ~/.config/aether/theme/colors.toml
+# ─────────────────────────────────────────────────────────────────────────────
+# La cadena en caliente es: quickshell (cambio de wallpaper) -> apply-colors.sh
+# -> matugen image -> template aether-colors.toml -> colors.toml, que lee el
+# tema modern de oh-my-bash en cada prompt.
+#
+# asegurar_templates_matugen — matugen 4.x aborta (y entonces no llega a
+#   generar colors.toml) si algún input_path de su config no existe. Cada zip
+#   de quickshell sólo trae los templates de su compositor, así que en una
+#   instalación limpia de un solo compositor faltan los de los demás. Esta
+#   función completa los que falten extrayéndolos de los zips versionados.
+#   No fatal: si falta unzip o algún template, sólo avisa.
+asegurar_templates_matugen() {
+  local conf="$CONFIG_HOME/matugen/config.toml"
+  [[ -f "$conf" ]] || return 0
+  if ! have unzip; then
+    warn "unzip no disponible; no puedo completar los templates de matugen."
+    return 0
+  fi
+
+  local path base zip entry
+  local -a inputs=()
+  while IFS= read -r path; do
+    inputs+=("$path")
+  done < <(grep -o 'input_path[[:space:]]*=[[:space:]]*"[^"]*"' "$conf" |
+           sed 's/.*=[[:space:]]*"\([^"]*\)".*/\1/')
+  ((${#inputs[@]})) || return 0
+
+  for path in "${inputs[@]}"; do
+    path="${path/#\~/$HOME}"
+    [[ -f "$path" ]] && continue
+    base="$(basename "$path")"
+    entry=""
+    # 1) los templates que viajan en matugen/ (los instala copy_dir)
+    if [[ -f "$PROJECT_DIR/matugen/templates/$base" ]]; then
+      mkdir -p "$(dirname "$path")"
+      cp -a "$PROJECT_DIR/matugen/templates/$base" "$path"
+      ok "Template de matugen completado: $path"
+      continue
+    fi
+    # 2) los de quickshell: cada zip sólo trae los de su compositor, así que
+    #    en una instalación de un solo compositor faltan los de los demás.
+    for zip in "$PROJECT_DIR"/quickshell-*.zip; do
+      [[ -f "$zip" ]] || continue
+      entry="$(unzip -Z1 "$zip" 2>/dev/null | grep "/matugen-templates/$base\$" | head -1)"
+      [[ -n "$entry" ]] && break
+    done
+    if [[ -z "$entry" ]]; then
+      warn "No encuentro el template $base en el proyecto ni en los zips ($path)."
+      continue
+    fi
+    mkdir -p "$(dirname "$path")"
+    if unzip -p "$zip" "$entry" >"$path" 2>/dev/null && [[ -s "$path" ]]; then
+      ok "Template de matugen completado: $path"
+    else
+      rm -f "$path"
+      warn "No pude extraer $base de $(basename "$zip")."
+    fi
+  done
+  return 0
+}
+
+# generar_colores_prompt — genera ~/.config/aether/theme/colors.toml una sola
+#   vez al instalar, para que el primer prompt ya salga con los colores del
+#   wallpaper en vez de la paleta por defecto del tema. No fatal: si no hay
+#   matugen, wallpaper o la generación falla, sólo avisa y el tema usa su
+#   paleta hardcodeada.
+generar_colores_prompt() {
+  local conf="$CONFIG_HOME/matugen/config.toml"
+  local out="$HOME/.config/aether/theme/colors.toml"
+
+  if [[ -f "$out" ]]; then
+    info "Colores del prompt ya generados: $out"
+    return 0
+  fi
+  if ! have matugen; then
+    info "matugen no disponible; el prompt usará su paleta por defecto."
+    return 0
+  fi
+  if [[ ! -f "$conf" ]]; then
+    warn "No existe $conf; no puedo generar los colores del prompt."
+    return 0
+  fi
+
+  local dir="$HOME/Pictures/Wallpapers" wp
+  wp="$(find "$dir" -maxdepth 1 -type f -name 'image.*' -print -quit 2>/dev/null)"
+  [[ -n "$wp" ]] || wp="$(find "$dir" -maxdepth 1 -type f -print -quit 2>/dev/null)"
+  if [[ -z "$wp" ]]; then
+    warn "No hay wallpapers en $dir; colores del prompt no generados."
+    return 0
+  fi
+
+  title "Colores del prompt (matugen)"
+  step "Generando $(basename "$out") desde $(basename "$wp")"
+  if ! matugen image "$wp" -m dark; then
+    warn "matugen falló con la config completa ($conf)."
+  fi
+
+  if [[ ! -s "$out" ]]; then
+    # Sigue sin colors.toml (config completa incompleta): reintento con una
+    # config mínima que sólo dibuja el prompt.
+    local tmp; tmp="$(mktemp)"
+    {
+      printf '[config]\nprefix = "_"\nprefer = "saturation"\n\n'
+      printf '[templates.bash_prompt]\n'
+      printf 'input_path = "%s"\n' "$CONFIG_HOME/matugen/templates/aether-colors.toml"
+      printf 'output_path = "%s"\n' "$out"
+    } >"$tmp"
+    step "Reintento sólo con el template del prompt"
+    if ! matugen -c "$tmp" image "$wp" -m dark; then
+      warn "No se pudieron generar los colores del prompt; el tema usará su paleta por defecto."
+    fi
+    rm -f "$tmp"
+  fi
+
+  if [[ -s "$out" ]]; then
+    ok "Colores del prompt en $out"
+  else
+    warn "No se generó $out; el prompt usará su paleta por defecto."
+  fi
+  return 0
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -401,7 +544,10 @@ instalar_dotfiles() {
   # Instalar compartidos una sola vez
   instalar_dotfiles_compartidos
 
-  # Wallpapers y shell config (bashrc/zshrc) + frameworks de shell
+  # Wallpapers y shell config (bashrc/zshrc) + frameworks de shell.
+  # El orden importa: el instalador oficial de OMB escribe su plantilla en
+  # ~/.bashrc, por eso instalar_oh_my_bash va ANTES de copiar_shell_config,
+  # que instala el ~/.bashrc del proyecto (OSH_THEME="modern") encima.
   copiar_wallpapers
   instalar_ble_sh
   instalar_oh_my_bash
@@ -416,6 +562,11 @@ instalar_dotfiles() {
     instalar_dotfiles_compositor "$comp"
     instalar_quickshell "$comp"
   done
+
+  # Colores del prompt: completar templates de matugen (los zips traen sólo
+  # los de su compositor) y generar colors.toml antes del primer arranque.
+  asegurar_templates_matugen
+  generar_colores_prompt
 
   # Autoconfiguración de resolución/salida de monitor según el hardware real
   # de cada PC (no fatal: si falla, los compositores usan su autoconfig).
