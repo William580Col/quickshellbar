@@ -1,0 +1,105 @@
+REPLICAR BLUETOOTH EN CACHYOS (PC escritorio)
+==========================================
+Caso de referencia: Arch + bluez 5.87 + pipewire/wireplumber + dongle USB CSR clone 0a12:0001 + audífono I69 + quickshell umbriel.
+
+1) PAQUETES
+----------
+sudo pacman -S --needed bluez bluez-utils pipewire wireplumber pipewire-pulse pipewire-alsa
+(opcional: blueman solo para depurar; el panel usado es quickshell umbriel)
+
+2) SERVICIO BLUETOOTH
+--------------------
+sudo rfkill unblock bluetooth
+sudo systemctl enable --now bluetooth.service
+systemctl status bluetooth.service --no-pager   # debe decir active (running)
+
+bluetoothctl power on
+bluetoothctl pairable on
+bluetoothctl discoverable on
+bluetoothctl show   # verificar: Powered: yes, Pairable: yes, Discoverable: yes
+
+3) DONGLE CSR 0a12:0001 (Barrot 8041a02, BT DONGLE10) - fix autosuspend
+----------------------------------------------------------------------
+# Detectar:
+lsusb -t
+lsusb -d 0a12:0001 -v | grep -i -E "manufacturer|product|bcddevice"
+# El puerto sale como 1-1.2 o similar. Ajustar X-Y.Z abajo al puerto real:
+cat /sys/bus/usb/devices/1-1.2/power/control      # si dice "auto", aplicar fix
+cat /sys/bus/usb/devices/1-1.2/power/autosuspend  # si dice 0/2, aplicar fix
+
+# Fix temporal (se pierde al reiniciar):
+echo on | sudo tee /sys/bus/usb/devices/1-1.2/power/control
+echo -1 | sudo tee /sys/bus/usb/devices/1-1.2/power/autosuspend
+
+# Fix permanente con udev (recomendado):
+sudo sh -c 'echo "ACTION==\"add\", SUBSYSTEM==\"usb\", ATTR{idVendor}==\"0a12\", ATTR{idProduct}==\"0001\", ATTR{power/control}=\"on\"" > /etc/udev/rules.d/81-bt-dongle-no-autosuspend.rules && udevadm control --reload-rules'
+cat /etc/udev/rules.d/81-bt-dongle-no-autosuspend.rules   # verificar
+
+4) PROBAR QUE EL RECEPTOR SIRVE (antes de culpar al audio)
+----------------------------------------------------------
+# Escaneo LE 15s: en cualquier casa debe encontrar algo (TV, relojes, vecinos).
+timeout 18 bluetoothctl --timeout 15 scan le
+timeout 4 bluetoothctl devices
+# Si encuentra aunque sea 1 (ej. I69), el dongle recibe. Si da 0 total, probar otro puerto USB 2.0 (evitar USB 3.0).
+
+5) EMPAREJAR EL AUDÍFONO I69 (importante: el celular lo acapara)
+----------------------------------------------------------------
+# Estos audífonos son de un solo punto: si están conectados al celular, la PC no los ve.
+# 1. Apagar el Bluetooth del celular (o desconectar el I69 del celular).
+# 2. Poner el I69 en modo pairing (según su manual).
+# 3. En la PC:
+timeout 25 bluetoothctl --timeout 20 scan on
+timeout 4 bluetoothctl devices             # anotar MAC, ej. A7:BD:83:19:EE:43
+timeout 45 bluetoothctl pair A7:BD:83:19:EE:43
+timeout 8 bluetoothctl trust A7:BD:83:19:EE:43        # sintaxis NUEVA: sin "on/off"
+timeout 20 bluetoothctl connect A7:BD:83:19:EE:43
+timeout 4 bluetoothctl info A7:BD:83:19:EE:43        # debe decir Paired: yes, Trusted: yes, Connected: yes
+
+# 4. Verificar audio:
+pactl list short sinks                     # debe aparecer bluez_output.<MAC>.1
+pactl set-default-sink bluez_output.A7_BD_83_19_EE_43.1   # ajustar a tu MAC (_ en vez de :)
+pactl get-default-sink
+
+# Si dice Connected: yes pero no hay sink bluez, forzar ciclo:
+timeout 15 bluetoothctl disconnect A7:BD:83:19:EE:43
+sleep 2
+timeout 20 bluetoothctl connect A7:BD:83:19:EE:43
+pactl list short sinks
+
+6) FIXES DEL PANEL QUICKSHELL UMBRIEL (~/.config/quickshell/umbriel/)
+--------------------------------------------------------------------
+# Solo si usas este panel. Archivos tocados:
+#   services/Bluetooth.qml
+#   (scripts/bluetooth-state.sh, modules/BluetoothPanel.qml, modules/Bar.qml y shell.qml solo se revisaron)
+
+# Fix A - Discovering siempre false: en el parse de la línea ADAPTER el índice era a[3], debe ser a[4]:
+#   ANTES: bt.discovering = (a[3] === "yes")
+#   DESPUÉS: bt.discovering = (a[4] === "yes")
+#   (la línea es: ADAPTER|Powered|yes|Discovering|no  -> a[0]=ADAPTER a[1]=Powered a[2]=yes/no a[3]=Discovering a[4]=no/yes)
+
+# Fix B - busy global bloqueaba todos los botones: runOp debe llevar addr del dispositivo:
+#   function runOp(op, cmd, addr) { ...; bt.busy = addr || "adapter"; ... }
+#   y cada acción pasa su addr:
+#   connectDevice/disconnectDevice/removeDevice/trustDevice -> bt.runOp("...", "...", addr)
+
+# Fix C - sintaxis trust nueva de bluez (sin on/off). ANTES fallaba con "Too many arguments: 2 > 1":
+#   trustDevice:
+#     ANTES: "timeout 15 bluetoothctl trust '" + addr + "' " + (trust ? "on" : "off")
+#     DESPUÉS: "timeout 15 bluetoothctl " + (trust ? "trust" : "untrust") + " '" + addr + "'"
+#   pairDevice:
+#     ANTES: "timeout 10 bluetoothctl trust '" + addr + "' on"
+#     DESPUÉS: "timeout 10 bluetoothctl trust '" + addr + "'"
+# Después quickshell recarga solo. Verificar con: ps aux | grep quickshell (sin errores QML en el log).
+
+7) CHEQUEO FINAL
+---------------
+timeout 4 bluetoothctl info A7:BD:83:19:EE:43 | grep -E "Name|Paired|Trusted|Connected"
+pactl get-default-sink      # debe ser el bluez_output...
+# Probar sonido. Si el celular vuelve a robar el I69: desconectar del celular o apagar su BT.
+
+NOTAS
+-----
+- Escaneo clásico de audio: `bluetoothctl scan bredr` (los headsets usan BR/EDR, no LE).
+- `bluetoothctl scan on` mezcla ambos; `scan le` solo LE.
+- btmon necesita root (sin sudo da "Failed to bind channel: Operation not permitted").
+- No usar `bluetoothctl trust <MAC> on/off` (sintaxis vieja); usar `trust <MAC>` / `untrust <MAC>`.
