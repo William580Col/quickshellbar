@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -31,11 +32,26 @@ PanelWindow {
     property var wifiPanelRef
     property var bluetoothPanelRef
     property var barSettingsRef
+    property var windowSwitcherRef
 
-    // Namespace de la superficie, para poder apuntarle con una regla de
-    // Hyprland (hl.layer_rule) y lograr blur real además de la transparencia
-    // que ya aplicamos nosotros mismos. Ver README, sección "Efecto cristal".
+    // Namespace de la superficie layer-shell. NOTA Sway: Sway no soporta
+    // blur de capas por diseño; solo usamos transparencia propia
+    // (BarConfig.surfaceColor con alpha 0.82) sobre PanelWindow transparente.
     WlrLayershell.namespace: "quickshell"
+
+    // Capa Overlay: garantía DETERMINISTA de apilado entre la barra y el
+    // marco (ScreenFrame, capa Top). Con ambas en Top el orden lo decide el
+    // mapeo de las superficies, y eso no es fiable: quickshell reutiliza la
+    // ventana física al recargar la config (ProxyWindowBase::onReload →
+    // retrieveWindow) conservando el apilado antiguo, y cada ocultar/
+    // re-mostrar recrea la superficie (WlrLayershell.deleteOnInvisible) y la
+    // pone por encima de su misma capa. Overlay > Top por protocolo: los
+    // iconos quedan SIEMPRE por encima de la banda opaca que pinta el marco,
+    // sin depender del orden de creación. Sin efectos secundarios: ninguna
+    // otra ventana Top de quickshell solapa la franja de la barra
+    // (notificaciones arrancan en y=50, dock abajo, marco transparente aquí),
+    // y las zonas exclusivas/entradas no dependen de la capa.
+    WlrLayershell.layer: WlrLayer.Overlay
 
     anchors {
         top: BarConfig.position === "top"
@@ -44,14 +60,30 @@ PanelWindow {
         right: true
     }
 
-    property real fullHeight: Theme.barHeight * BarConfig.scale + 12
+    // Alto compartido de la ventana (ya redondeado a píxel en BarConfig):
+    // no se recalcula aquí para no divergir de la geometría del marco.
+    property real fullHeight: BarConfig.barWindowHeight
+    // Borde inferior de la superficie visible de la barra: mismo alto que
+    // la pastilla clásica (sin el margen inferior de6px). Así la barra no
+    // se ve "grande" y deja6px de aire antes del área de contenido.
+    readonly property real surfaceBottom: BarConfig.barSurfaceEdge
+    // Superficie a sangre según posición: arriba = y0..surfaceBottom (tocando
+    // el borde superior); abajo = y6..fullHeight (tocando el inferior). La
+    // banda del marco cubre sus bordes contra la pantalla, así que el
+    // rectángulo no necesita redondeo propio.
+    readonly property real surfTop: BarConfig.position === "top" ? 0 : 6
+    readonly property real surfEnd: BarConfig.position === "top" ? surfaceBottom : fullHeight
     property bool hidden: false
     // Cuando hay una ventana fullscreen en esta pantalla, la barra se oculta
     // para que la ventana ocupé todo el output (p. ej. Firefox F11).
     property bool fullscreenBlocking: false
 
     implicitHeight: (hidden || fullscreenBlocking) ? 6 : fullHeight
-    exclusiveZone: (hidden || fullscreenBlocking) ? 0 : fullHeight
+    // Zona exclusiva = alto visual de la barra (surfaceBottom), no el alto
+    // de ventana (fullHeight). Así las ventanas maximizadas empiezan justo
+    // debajo de la banda, igual que abajo con el dock (exclusiveZone 0),
+    // sin gap de 6px de diferencia entre arriba y abajo.
+    exclusiveZone: (hidden || fullscreenBlocking) ? 0 : surfaceBottom
     color: "transparent"
 
     function revealBar() {
@@ -84,6 +116,7 @@ PanelWindow {
         id: fullscreenPollTimer
         interval: 500
         repeat: true
+        running: true
         triggeredOnStart: true
         onTriggered: bar.updateFullscreenBlocking()
     }
@@ -96,7 +129,9 @@ PanelWindow {
         delegate: Item {
             Connections {
                 target: modelData
-                onFullscreenChanged: bar.updateFullscreenBlocking()
+                function onFullscreenChanged() {
+                    bar.updateFullscreenBlocking()
+                }
             }
             Component.onCompleted: bar.updateFullscreenBlocking()
         }
@@ -107,8 +142,16 @@ PanelWindow {
         var vals = ToplevelManager.toplevels.values
         for (var i = 0; i < vals.length; i++) {
             var tl = vals[i]
-            if (!tl || tl.minimized) continue
-            if (tl.fullscreen && tl.screens.indexOf(bar.screen) >= 0) {
+            if (!tl || tl.minimized || !tl.fullscreen) continue
+            var onScreen = false
+            var scrs = tl.screens || []
+            for (var j = 0; j < scrs.length; j++) {
+                if (scrs[j] && bar.screen && scrs[j].name === bar.screen.name) {
+                    onScreen = true
+                    break
+                }
+            }
+            if (onScreen) {
                 blocking = true
                 break
             }
@@ -127,17 +170,58 @@ PanelWindow {
         onExited: bar.scheduleHide()
     }
 
-    // Fondo de la barra: una "pastilla" flotante con margen y bordes
-    // redondeados. Con "efecto cristal" activo, se vuelve translúcida.
+    // ---- Superficie Caelestia (detrás del contenido) ----
+    // Rectángulo opaco a sangre hasta surfaceBottom, con MSAA
+    // (layer.samples: 4) + antialiasing para bordes suaves.
+    // SOLO pinta la banda cuando NO la pinta el marco: con el marco
+    // activo (screenBorder + estilo Caelestia) el único pintor de la
+    // unión barra↔fillet↔filete es ScreenFrame, que los resuelve en su
+    // propio buffer con el mismo MSAA (aquí solo se apaga ESTE fondo;
+    // la ventana sigue transparente y los hijos de arriba —iconos y
+    // módulos— siguen visibles encima de la banda que pinta el marco).
+    // Sin contorno propio: el filete del marco más el contraste
+    // blanco/oscuro dibujan el perfil, igual que con paneles integrados.
+    Shape {
+        visible: !bar.hidden && !bar.fullscreenBlocking && BarConfig.screenBorder && !BarConfig.caelestia
+        anchors.fill: parent
+        antialiasing: true
+        layer.enabled: true
+        layer.samples: 4
+
+        // Rectángulo a sangre (ver surfTop/surfEnd): sin redondeo propio,
+        // la banda del marco define las esquinas de la pantalla y cubre los
+        // bordes pegados a ella.
+        ShapePath {
+            fillColor: Theme.bg
+            strokeColor: "transparent"
+
+            PathMove { x: 0; y: bar.surfTop }
+            PathLine { x: bar.width; y: bar.surfTop }
+            PathLine { x: bar.width; y: bar.surfEnd }
+            PathLine { x: 0; y: bar.surfEnd }
+        }
+    }
+
+    // Fondo de la barra. En estilo "clásico" es una pastilla flotante con
+    // margen y bordes redondeados (con "efecto cristal", translúcida). Con
+    // el marco de pantalla (Caelestia) queda transparente y sin borde: es
+    // solo el contenedor de layout; la superficie la dibuja el Shape de
+    // arriba, que sí llega al borde de la pantalla.
     Rectangle {
+        id: bg
+        // Sin margen en el lado pegado a la pantalla: el contenido se centra
+        // en la superficie real cuando la barra va a sangre (arriba: sin
+        // margen superior; abajo: sin margen inferior).
         anchors.fill: parent
         anchors.margins: 6
+        anchors.topMargin: BarConfig.screenBorder && BarConfig.position === "top" ? 0 : 6
+        anchors.bottomMargin: BarConfig.screenBorder && BarConfig.position === "bottom" ? 0 : 6
         radius: Theme.radiusLarge
-        color: BarConfig.surfaceColor(Theme.bg)
+        color: BarConfig.screenBorder ? "transparent" : BarConfig.surfaceColor(Theme.bg)
         border.color: Theme.border
-        border.width: 1
-        visible: !bar.hidden
-        opacity: bar.hidden ? 0 : 1
+        border.width: BarConfig.screenBorder ? 0 : 1
+        visible: !bar.hidden && !bar.fullscreenBlocking
+        opacity: (bar.hidden || bar.fullscreenBlocking) ? 0 : 1
 
         RowLayout {
             anchors.fill: parent
@@ -192,7 +276,9 @@ PanelWindow {
         "launcher": launcherComponent,
         "workspaces": workspacesComponent,
         "activewindow": activeWindowComponent,
+        "windowswitcher": windowSwitcherComponent,
         "clock": clockComponent,
+        "mediacontrols": mediaControlsComponent,
         "tray": trayComponent,
         "screenshot": screenshotComponent,
         "wifi": wifiComponent,
@@ -231,6 +317,22 @@ PanelWindow {
 
     Component { id: workspacesComponent; Workspaces {} }
     Component { id: activeWindowComponent; ActiveWindow {} }
+    Component { id: mediaControlsComponent; MediaControls {} }
+
+    Component {
+        id: windowSwitcherComponent
+        Text {
+            text: "󱂬"
+            color: Theme.text
+            font.pixelSize: 15
+            MouseArea {
+                anchors.fill: parent
+                anchors.margins: -6
+                cursorShape: Qt.PointingHandCursor
+                onClicked: bar.windowSwitcherRef && bar.windowSwitcherRef.toggle()
+            }
+        }
+    }
 
     Component {
         id: clockComponent
@@ -410,7 +512,12 @@ PanelWindow {
         id: calendarPopup
         anchor.window: bar
         anchor.rect.x: bar.width / 2 - 130
-        anchor.rect.y: BarConfig.position === "top" ? bar.fullHeight - 2 : -300 - 8
+        // Integrado: pegado al borde inferior visible de la barra (1px de
+        // solape). Clásico: 2px bajo la barra, u 8px sobre ella si la
+        // barra está abajo.
+        anchor.rect.y: BarConfig.integratedPanels
+            ? (BarConfig.position === "top" ? bar.fullHeight - 7 : 7 - implicitHeight)
+            : (BarConfig.position === "top" ? bar.fullHeight - 2 : -implicitHeight - 8)
         implicitWidth: 260
         implicitHeight: 300
         visible: false
@@ -422,7 +529,10 @@ PanelWindow {
         id: quickSettingsPopup
         anchor.window: bar
         anchor.rect.x: bar.width - 340
-        anchor.rect.y: BarConfig.position === "top" ? bar.fullHeight - 2 : -420 - 8
+        // Igual que calendarPopup: integrado pegado a la barra, clásico como antes.
+        anchor.rect.y: BarConfig.integratedPanels
+            ? (BarConfig.position === "top" ? bar.fullHeight - 7 : 7 - implicitHeight)
+            : (BarConfig.position === "top" ? bar.fullHeight - 2 : -implicitHeight - 8)
         implicitWidth: 320
         implicitHeight: 420
         visible: false
