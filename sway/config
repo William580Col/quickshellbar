@@ -25,6 +25,7 @@ exec wl-paste --type text --watch cliphist store
 exec wl-paste --type image --watch cliphist store
 exec quickshell -c ~/.config/quickshell/sway
 exec nm-applet --indicator
+exec jamesdsp --tray --watch --silent
 
 # -------------------------------
 # ---- ENVIRONMENT VARIABLES ----
@@ -50,8 +51,8 @@ exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DE
 # matugen-config-snippet.toml para la generación.
 include ~/.config/sway/colors
 
-gaps inner 5
-gaps outer 9
+gaps inner 2
+gaps outer 4
 default_border pixel 3
 default_floating_border pixel 3
 smart_borders off
@@ -82,6 +83,12 @@ input type:keyboard {
 input type:touchpad {
     natural_scroll disabled
     pointer_accel 0
+}
+
+input type:pointer {
+    scroll_method on_button_down
+    scroll_button 274
+    scroll_button_lock enabled
 }
 
 # follow_mouse=1 en Hyprland ≈ focus_follows_mouse en Sway
@@ -257,3 +264,11 @@ for_window [app_id="^org.gnome.Calculator$"] floating enable, resize set 600 300
 
 # Reglas "immediate" (tearing) para juegos: Sway no soporta control de
 # tearing por ventana (ni en general). Omitido.
+
+# === SwayFX: bordes redondeados (esquinas) ===
+# corner_radius <val>  (radio en píxeles; requiere gaps para ser visible)
+corner_radius 12
+
+# === SwayFX: gaps para que las esquinas redondeadas se vean ===
+gaps inner 10
+gaps outer 10

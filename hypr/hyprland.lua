@@ -48,7 +48,7 @@ hl.on("hyprland.start", function()
     -- 2. Iniciar el demonio de cliphist para guardar imágenes (por ejemplo, tus capturas con grim)
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
 
-    hl.exec_cmd("quickshell -c ~/.config/quickshell")
+    hl.exec_cmd("quickshell -c $HOME/.config/quickshell")
     hl.exec_cmd("nm-applet --indicator")
 
 end)
@@ -82,6 +82,16 @@ hl.env("ADW_DEBUG_COLOR_SCHEME", "prefer-dark")
 hl.env("QT_QPA_PLATFORM", "wayland;xcb") 
 hl.env("QT_QPA_PLATFORMTHEME", "kde")
 hl.env("QT_STYLE_OVERRIDE", "Darkly")
+
+-- Rendimiento video / Wayland nativo (Intel Sandy Bridge i915 + Firefox)
+-- Sin esto Firefox puede caer a XWayland y a decode por CPU, y VA-API
+-- puede elegir intel-media-driver (Broadwell+) en vez de i965.
+hl.env("MOZ_ENABLE_WAYLAND", "1")
+hl.env("EGL_PLATFORM", "wayland")
+hl.env("LIBVA_DRIVER_NAME", "i965")
+hl.env("VDPAU_DRIVER", "va_gl")
+hl.env("MOZ_DISABLE_RDD_SANDBOX", "1")
+hl.env("MOZ_WEBRENDER", "1")
 
 
 
@@ -127,16 +137,24 @@ hl.config({
     },
 
     decoration = {
-        rounding = 0,
+        -- Esquinas redondas para que las ventanas combinen con el shell
+        -- (Quickshell) y el marco Caelestia: radio 12 y curva circular
+        -- (rounding_power 2.0 = círculo, 4.0 = squircle). Ajusta el radio
+        -- a gusto; 12 encaja con el hueco de 16px del marco Caelestia.
+        rounding = 12,
         rounding_power = 2,
         active_opacity = 1.0,
         inactive_opacity = 1.0,
         shadow = { enabled = false },
         blur = {
-            enabled = true,
+            enabled = false, -- APAGADO: en Sandy Bridge/i915 el blur cuesta
+            -- más que todo Hyprland junto. Sway no tiene blur, por eso ahí
+            -- no pierdes frames. Si lo quieres de vuelta, déjalo en true
+            -- pero con new_optimizations.
             passes = 3,
             size = 7,
             noise = 0.02,
+            new_optimizations = true,
         },
     },
 
@@ -207,7 +225,22 @@ hl.config({
         force_default_wallpaper = 0,     -- Desactivar fondos animados pesados
         disable_hyprland_logo   = true,  -- Desactivar el logo aleatorio para ahorrar recursos de arranque
         vrr = 0,                         -- Cambiado a 0 (Apagado) para evitar parpadeos y lag de refresco
+        animate_manual_resizes = false,  -- Evita recomposición extra al redimensionar
+        focus_on_activate = true,
         }
+})
+
+hl.config({
+    debug = {
+        vfr = true, -- Solo repinta cuando algo cambia: ahorra GPU/CPU en video (antes misc:vfr)
+    }
+})
+
+-- Rendimiento crítico para video en GPU vieja (i915 Sandy Bridge)
+hl.config({
+    render = {
+        direct_scanout = true, -- En fullscreen (F11/SUPER+F) bypasea el compositor: igual que Sway
+    }
 })
 
 
@@ -226,6 +259,10 @@ hl.config({
         follow_mouse = 1,
 
         sensitivity = 0, -- -1.0 - 1.0, 0 means no modification.
+
+        scroll_method = "on_button_down",
+        scroll_button = 274,
+        scroll_button_lock = true,
 
         touchpad = {
             natural_scroll = false,
@@ -467,12 +504,12 @@ hl.window_rule({ match = { class = "^steam_app_.*" }, immediate = true })
 hl.window_rule({ match = { class = "^heroic$" },      immediate = true })
 hl.window_rule({ match = { class = "^gamescope$" },   immediate = true })
 
--- Efecto cristal quickshell: blur real sobre Bar/Launcher/PowerMenu
--- (PanelWindow color transparent + BarConfig.surfaceColor alpha 0.82).
--- Sombras y animaciones siguen desactivadas; solo blur.
+-- Efecto cristal quickshell: DESACTIVADO por rendimiento en i915.
+-- Sway no tiene blur y por eso va fluido. Si lo reactivas, el video
+-- de YouTube vuelve a perder frames. blur=false no gasta GPU.
 hl.layer_rule({
-    name  = "quickshell-blur",
+    name  = "quickshell-no-blur",
     match = { namespace = "quickshell" },
-    blur = true,
+    blur = false,
     ignore_alpha = 0.25,
 })
